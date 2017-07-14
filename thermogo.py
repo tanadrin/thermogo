@@ -7,27 +7,29 @@ import libtcodpy as libtcod
 from decimal import *
 
 class GameObject:
+
+    #GUI and map variables
+    SCREEN_WIDTH = 182
+    SCREEN_HEIGHT = SCREEN_WIDTH/2+1
+    #Height of GUI pane on bottom of the screen, the "infobar"
+    INFOBAR_HEIGHT = 10
+    #Size of border around game windows and menus
+    MARGIN_WIDTH = 1
+    #Size of the main game view
+    CAMERA_WIDTH = SCREEN_WIDTH-2*MARGIN_WIDTH
+    CAMERA_HEIGHT = SCREEN_HEIGHT-2*MARGIN_WIDTH
+    #Size of the togglable right-hand menu
+    MENU_WIDTH = 20
+    #PNG font used for game
+    GAME_FONT = 'arial10x10.png'
+    #Maximum game FPS; 1 frame is the basic unit of in-game time
+    LIMIT_FPS = 20
+    #Directory to save map files in
+    MAP_DIRECTORY = 'map/'
+    #Minimum frame intervals between GUI events
+    GUI_WAIT = 0
+    
     def __init__(self):
-        #GUI and map variables
-        self.SCREEN_WIDTH = 182
-        self.SCREEN_HEIGHT = self.SCREEN_WIDTH/2+1
-        #Height of GUI pane on bottom of the screen, the "infobar"
-        self.INFOBAR_HEIGHT = 10
-        #Size of border around game windows and menus
-        self.MARGIN_WIDTH = 1
-        #Size of the main game view
-        self.CAMERA_WIDTH = self.SCREEN_WIDTH-2*self.MARGIN_WIDTH
-        self.CAMERA_HEIGHT = self.SCREEN_HEIGHT-2*self.MARGIN_WIDTH
-        #Size of the togglable right-hand menu
-        self.MENU_WIDTH = 20
-        #PNG font used for game
-        self.GAME_FONT = 'arial10x10.png'
-        #Maximum game FPS; 1 frame is the basic unit of in-game time
-        self.LIMIT_FPS = 20
-        #Directory to save map files in
-        self.MAP_DIRECTORY = 'map/'
-        #Minimum frame intervals between GUI events
-        self.GUI_WAIT = 0
         
         #Game state and GUI control variables
         #Whether the additional views are shown or hidden
