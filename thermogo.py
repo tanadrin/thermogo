@@ -11,7 +11,7 @@ class GameObject:
         #GUI and map variables
         self.SCREEN_WIDTH = 182
         self.SCREEN_HEIGHT = self.SCREEN_WIDTH/2+1
-        #Height of GUI pane on bottom of the screen, the "infobar"
+        #Height of GUI pane on bottom of the screen, the 'infobar'
         self.INFOBAR_HEIGHT = 10
         #Size of border around game windows and menus
         self.MARGIN_WIDTH = 1
@@ -34,7 +34,7 @@ class GameObject:
         self.show_menu = False
         self.show_infobar = False
         #Whether we're using real time or taking turns
-        self.time = "free"
+        self.time = 'free'
         #Input control variable; used to prevent some actions from happening too often
         self.gui_wait = 0
         #Main camera object
@@ -79,14 +79,14 @@ class GameObject:
     def refresh_infobar(self, infobar):
         libtcod.console_clear(infobar)
         actual_x, actual_y = self.cursor.x % self.gamemap.WORLD_WIDTH, self.cursor.y % self.gamemap.WORLD_HEIGHT
-        infobar_text = "Cursor grid: "+str(actual_x)+ ", "+str(actual_y)
-        infobar_text2 = "Cursor lat: "+str(self.gamemap.grid[actual_x][actual_y].la)
-        infobar_text3 = "Cursor long: "+str(self.gamemap.grid[actual_x][actual_y].lo)
+        infobar_text = 'Cursor grid: '+str(actual_x)+ ', '+str(actual_y)
+        infobar_text2 = 'Cursor lat: '+str(self.gamemap.grid[actual_x][actual_y].la)
+        infobar_text3 = 'Cursor long: '+str(self.gamemap.grid[actual_x][actual_y].lo)
         if self.gamemap.grid[actual_x][actual_y].elevation > 0:
-            infobar_text4 = "Elevation: "+str(int(self.gamemap.grid[actual_x][actual_y].elevation*4000))+"m"
+            infobar_text4 = 'Elevation: '+str(int(self.gamemap.grid[actual_x][actual_y].elevation*4000))+'m'
         else:
-            infobar_text4 = "Elevation: Sea level"
-        infobar_text5 = "s: save terrain; d: load terrain; g: gen terrain; k: hide infobar"
+            infobar_text4 = 'Elevation: Sea level'
+        infobar_text5 = 's: save terrain; d: load terrain; g: gen terrain; k: hide infobar'
         libtcod.console_print(infobar, 0, 0, infobar_text)
         libtcod.console_print(infobar, 0, 1, infobar_text2)
         libtcod.console_print(infobar, 0, 2, infobar_text3)
@@ -115,13 +115,13 @@ class GameObject:
             for y in range(self.SCREEN_HEIGHT):
                 libtcod.console_set_char_background(gui, x, y, libtcod.Color(100, 100, 100))
         if self.paused == True:
-            pause_text = "***PAUSED***"
+            pause_text = '***PAUSED***'
             for x in range(12):
                 libtcod.console_set_char_background(gui, self.CAMERA_WIDTH-15+x, 0, libtcod.Color(100, 100, 200))
                 libtcod.console_put_char(gui, self.CAMERA_WIDTH-15+x, 0, pause_text[x], libtcod.BKGND_NONE)
                 libtcod.console_set_char_foreground(gui, self.CAMERA_WIDTH-15+x, 0, libtcod.Color(255, 255, 255))
         if self.loading != False:
-            loading_text = "***LOADING***"
+            loading_text = '***LOADING***'
             for x in xrange(13):
                 libtcod.console_set_char_background(gui, 15+x, 0, libtcod.Color(100, 100, 200))
                 libtcod.console_put_char(gui, 15+x, 0, loading_text[x], libtcod.BKGND_NONE)
@@ -138,7 +138,7 @@ class GameObject:
             for y in range(self.CAMERA_HEIGHT):
                 (pos_x, pos_y) = self.camera_to_grid_coordinates(x, y)
                 if pos_y < 0 or pos_y >= map.WORLD_HEIGHT:
-                    libtcod.console_put_char(console, x, y, " ", libtcod.BKGND_NONE)
+                    libtcod.console_put_char(console, x, y, ' ', libtcod.BKGND_NONE)
                 else:
                     pos_x = pos_x % map.WORLD_WIDTH
                     libtcod.console_set_default_foreground(console, map.grid[pos_x][pos_y].color)
@@ -159,7 +159,7 @@ class GameObject:
         
     #Rendering the main view and GUI elements
     def render_all(self):
-        #blit the contents of "con" to the root console
+        #blit the contents of 'con' to the root console
         libtcod.console_blit(self.con, 0, 0, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 0, 0, 0)
         #blit the contents of the GUI background to the root console
         self.refresh_gui_background(self.gui_background)
@@ -212,7 +212,7 @@ class GameObject:
         if self.cursor != None:
             self.cursor.blink()
 
-        if self.time == "free":
+        if self.time == 'free':
             key = libtcod.console_check_for_keypress()  #real-time
      
         if key.vk == libtcod.KEY_ENTER and key.lalt:
@@ -267,11 +267,11 @@ class GameObject:
                     self.camera.move(0,-1)
                 
             #Save and load maps for later use
-            elif key.c == ord("s"):
+            elif key.c == ord('s'):
                 self.gamemap.save_map()
-            elif key.c == ord("d"):
+            elif key.c == ord('d'):
                 self.gamemap.load_map()
-            elif key.c == ord("g"):
+            elif key.c == ord('g'):
                 self.gamemap.gen_map()
 
     
@@ -301,13 +301,13 @@ class Unit:
     def __init__(self, x, y, objects):
         self.x = x
         self.y = y
-        self.char = "@"
+        self.char = '@'
         self.color = libtcod.Color(255,255,255)
-        self.name = "Unit"
+        self.name = 'Unit'
     
     #Generic movement on a sphere. Kind of.
     #Uses Decimal() since this is actual game-world coords. on surface of the sphere
-    def move(self, dlo, dla):
+    '''def move(self, dlo, dla):
         self.lo += Decimal(dlo)
         if self.lo < Decimal(-180):
             self.lo += Decimal(360)
@@ -317,36 +317,35 @@ class Unit:
         if self.la < Decimal(-90):
             self.la = Decimal(-90)
         elif self.la > Decimal(90):
-            self.la = Decimal(90)
+            self.la = Decimal(90)'''
                 
-    #Hide the object; draw_object won't draw objects represented by " ".
+    #Hide the object; draw_object won't draw objects represented by ' '.
     #def clear(self):
-    #    libtcod.console_put_char(game.con, self.x, self.y, " ", libtcod.BKGND_NONE)
+    #    libtcod.console_put_char(game.con, self.x, self.y, ' ', libtcod.BKGND_NONE)
 
 class Cursor(Unit):
     def __init__(self, x, y):
         #lo and la are longitude and latitude
         self.x = x
         self.y = y
-        self.char = "X"
+        self.char = 'X'
         self.color = libtcod.Color(255,255,0)
         self.wait = 5
-        self.name = "Cursor"
+        self.name = 'Cursor'
     
-    #Uses Decimal() since this is actual game-world coords. on surface of the sphere
     def move(self, x, y):
         self.x += x
         self.y += y
-        self.char = "X"
+        self.char = 'X'
         self.wait = 4
     def blink(self):
         if self.wait > 0:
             self.wait += -1
-        elif self.wait == 0 and self.char == "X":
-            self.char = " "
+        elif self.wait == 0 and self.char == 'X':
+            self.char = ' '
             self.wait = 5
-        elif self.wait == 0 and self.char == " ":
-            self.char = "X"
+        elif self.wait == 0 and self.char == ' ':
+            self.char = 'X'
             self.wait = 5
 
 #Used to keep track of what to render onscreen, and to differentiate the position of the camera from the position of the player, in case we want to move one and not the other
@@ -354,7 +353,6 @@ class GameCamera:
     def __init__(self, x = 0, y = 0):
         self.x = x
         self.y = y
-    #Doesn't use Decimal() since it's only relative to the grid projection of the gameworld sphere
     def move(self, dx, dy):
         self.x += dx
         self.y += dy
@@ -378,7 +376,7 @@ class GridCoordinate:
         self.y = y
         self.la = ((Decimal(self.y)*180)/Decimal(world_height))-90
         self.lo = ((Decimal(self.x)*360)/Decimal(world_width))-180
-        self.char = "#"
+        self.char = '#'
         self.color = libtcod.Color(255,255,255)
         
         #Sampling 3d noise to get the shape of the landmasses
@@ -386,25 +384,25 @@ class GridCoordinate:
         self.elevation = libtcod.noise_get_fbm(world_noise,[float(x),float(y),float(z)],self.DETAIL)
         if 1 >= self.elevation > 0.8:
             self.color = libtcod.Color(202,163,85)
-            self.char = "A"
+            self.char = 'A'
         elif 0.8 >= self.elevation > 0.6:
             self.color = libtcod.Color(145,162,78)
-            self.char = "a"
+            self.char = 'a'
         elif 0.6 >= self.elevation > 0.4:
             self.color = libtcod.Color(129,162,76)
-            self.char = "n"
+            self.char = 'n'
         elif 0.4 >= self.elevation > 0.2:
             self.color = libtcod.Color(82,162,71)
-            self.char = "8"
+            self.char = '8'
         elif 0.2 >= self.elevation > 0.0:
             self.color = libtcod.Color(49,162,67)
-            self.char = "8"
+            self.char = '8'
         elif 0.0 >= self.elevation > -0.5:
             self.color = libtcod.Color(50,50,220)
-            self.char = "S"
+            self.char = 'S'
         elif -0.5 >= self.elevation >= -1:
             self.color = libtcod.Color(0,0,150)
-            self.char = "s"
+            self.char = 's'
             
     
 
@@ -417,7 +415,7 @@ class GameMap:
         self.world_radius = 5000 #Radius in km; determines distances on the surface
         self.grid = []
         self.world_noise = libtcod.noise_new(3)
-        self.name = "map_name"
+        self.name = 'map_name'
         for x in xrange(self.WORLD_WIDTH):
             row = []
             for y in xrange(self.WORLD_HEIGHT):
@@ -426,13 +424,13 @@ class GameMap:
         libtcod.noise_delete(self.world_noise)
             
     def save_map(self):
-        file = shelve.open(str(self.name), "n")
-        file["grid"] = self.grid
+        file = shelve.open(str(self.name), 'n')
+        file['grid'] = self.grid
         file.close()
                 
-    def load_map(self, map="map_name"):
-        file = shelve.open(map, "r")
-        self.grid = file["grid"]
+    def load_map(self, map='map_name'):
+        file = shelve.open(map, 'r')
+        self.grid = file['grid']
         file.close()
         
     def gen_map(self):
