@@ -2,9 +2,15 @@ import random
 import shelve
 import os.path
 import math
-#The Doryen Library - Documentation: http://roguecentral.org/doryen/data/libtcod/doc/1.5.1/index2.html
-import libtcodpy as libtcod
-from decimal import *
+import tcod as libtcod
+
+from decimal import Decimal
+
+from thermogo.mobs import Unit
+from thermogo.ui import Cursor, GameCamera
+from thermogo.map import GameMap
+from thermogo.helpers import *
+
 
 class GameObject:
 
@@ -21,7 +27,7 @@ class GameObject:
     #Size of the togglable right-hand menu
     MENU_WIDTH = 20
     #PNG font used for game
-    GAME_FONT = 'arial10x10.png'
+    GAME_FONT = 'assets/arial10x10.png'
     #Maximum game FPS; 1 frame is the basic unit of in-game time
     LIMIT_FPS = 20
     #Directory to save map files in
@@ -216,7 +222,7 @@ class GameObject:
 
         if self.time == "free":
             key = libtcod.console_check_for_keypress()  #real-time
-     
+
         if key.vk == libtcod.KEY_ENTER and key.lalt:
             #Alt+Enter: toggle fullscreen
             libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
@@ -236,6 +242,7 @@ class GameObject:
             '''
         
         if key.vk == libtcod.KEY_CHAR:
+            print key.c
             #Show or hide right-side menu
             if key.c == ord('l') and self.show_menu == False:
                 self.show_menu = True
@@ -297,155 +304,6 @@ class GameObject:
         (x2, y2) = self.grid_to_camera_coordinates(x, y)
         return (x2, y2)
         
-
-            
-class Unit:
-    def __init__(self, x, y, objects):
-        self.x = x
-        self.y = y
-        self.char = "@"
-        self.color = libtcod.Color(255,255,255)
-        self.name = "Unit"
-    
-    #Generic movement on a sphere. Kind of.
-    #Uses Decimal() since this is actual game-world coords. on surface of the sphere
-    def move(self, dlo, dla):
-        self.lo += Decimal(dlo)
-        if self.lo < Decimal(-180):
-            self.lo += Decimal(360)
-        elif self.lo > Decimal (180):
-            self.lo += Decimal (-360)
-        self.la += Decimal(dla)
-        if self.la < Decimal(-90):
-            self.la = Decimal(-90)
-        elif self.la > Decimal(90):
-            self.la = Decimal(90)
-                
-    #Hide the object; draw_object won't draw objects represented by " ".
-    #def clear(self):
-    #    libtcod.console_put_char(game.con, self.x, self.y, " ", libtcod.BKGND_NONE)
-
-class Cursor(Unit):
-    def __init__(self, x, y):
-        #lo and la are longitude and latitude
-        self.x = x
-        self.y = y
-        self.char = "X"
-        self.color = libtcod.Color(255,255,0)
-        self.wait = 5
-        self.name = "Cursor"
-    
-    #Uses Decimal() since this is actual game-world coords. on surface of the sphere
-    def move(self, x, y):
-        self.x += x
-        self.y += y
-        self.char = "X"
-        self.wait = 4
-    def blink(self):
-        if self.wait > 0:
-            self.wait += -1
-        elif self.wait == 0 and self.char == "X":
-            self.char = " "
-            self.wait = 5
-        elif self.wait == 0 and self.char == " ":
-            self.char = "X"
-            self.wait = 5
-
-#Used to keep track of what to render onscreen, and to differentiate the position of the camera from the position of the player, in case we want to move one and not the other
-class GameCamera:
-    def __init__(self, x = 0, y = 0):
-        self.x = x
-        self.y = y
-    #Doesn't use Decimal() since it's only relative to the grid projection of the gameworld sphere
-    def move(self, dx, dy):
-        self.x += dx
-        self.y += dy
-
-#Given a set of spherical coordinates will return Cartesian coordinates
-def spherical_to_cartesian(la, lo, radius):
-    x = radius*math.sin(math.radians(90-la))*math.cos(math.radians(lo))
-    y = radius*math.sin(math.radians(90-la))*math.sin(math.radians(lo))
-    z = radius*math.cos(math.radians(90-la))
-    return x, y, z
-        
-class GridCoordinate:
-    def __init__(self, x, y, world_width, world_height, world_noise):
-        #Elevation parameters, can be freely altered. Max elevation will affect what appears as mountains; min elevation what appears as deep sea.
-        #LANDMASS_SIZE is actually the radius of the spherical surface used to sample the noise function; a larger radius means smaller apparent
-        #landmass sizes. DETAIL is the number of octaves in the noise and affects how crinkly the landmasses are.
-        self.LANDMASS_SIZE = 2
-        self.DETAIL = 64.0
-        
-        self.x = x
-        self.y = y
-        self.la = ((Decimal(self.y)*180)/Decimal(world_height))-90
-        self.lo = ((Decimal(self.x)*360)/Decimal(world_width))-180
-        self.char = "#"
-        self.color = libtcod.Color(255,255,255)
-        
-        #Sampling 3d noise to get the shape of the landmasses
-        (x, y, z) = spherical_to_cartesian(self.la, self.lo, self.LANDMASS_SIZE)
-        self.elevation = libtcod.noise_get_fbm(world_noise,[float(x),float(y),float(z)],self.DETAIL)
-        if 1 >= self.elevation > 0.8:
-            self.color = libtcod.Color(202,163,85)
-            self.char = "A"
-        elif 0.8 >= self.elevation > 0.6:
-            self.color = libtcod.Color(145,162,78)
-            self.char = "a"
-        elif 0.6 >= self.elevation > 0.4:
-            self.color = libtcod.Color(129,162,76)
-            self.char = "n"
-        elif 0.4 >= self.elevation > 0.2:
-            self.color = libtcod.Color(82,162,71)
-            self.char = "8"
-        elif 0.2 >= self.elevation > 0.0:
-            self.color = libtcod.Color(49,162,67)
-            self.char = "8"
-        elif 0.0 >= self.elevation > -0.5:
-            self.color = libtcod.Color(50,50,220)
-            self.char = "S"
-        elif -0.5 >= self.elevation >= -1:
-            self.color = libtcod.Color(0,0,150)
-            self.char = "s"
-            
-    
-
-
-#A latitude-longitude grid with height data
-class GameMap:
-    def __init__(self, mapsize):
-        self.WORLD_WIDTH = mapsize
-        self.WORLD_HEIGHT = self.WORLD_WIDTH/2
-        self.world_radius = 5000 #Radius in km; determines distances on the surface
-        self.grid = []
-        self.world_noise = libtcod.noise_new(3)
-        self.name = "map_name"
-        for x in xrange(self.WORLD_WIDTH):
-            row = []
-            for y in xrange(self.WORLD_HEIGHT):
-                row.append(GridCoordinate(x, y, self.WORLD_WIDTH, self.WORLD_HEIGHT, self.world_noise))
-            self.grid.append(row)
-        libtcod.noise_delete(self.world_noise)
-            
-    def save_map(self):
-        file = shelve.open(str(self.name), "n")
-        file["grid"] = self.grid
-        file.close()
-                
-    def load_map(self, map="map_name"):
-        file = shelve.open(map, "r")
-        self.grid = file["grid"]
-        file.close()
-        
-    def gen_map(self):
-        self.grid = []
-        self.world_noise = libtcod.noise_new(3)
-        for x in xrange(self.WORLD_WIDTH):
-            row = []
-            for y in xrange(self.WORLD_HEIGHT):
-                row.append(GridCoordinate(x, y, self.WORLD_WIDTH, self.WORLD_HEIGHT, self.world_noise))
-            self.grid.append(row)
-        libtcod.noise_delete(self.world_noise)
         
 def main():
     global game
