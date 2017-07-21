@@ -10,6 +10,7 @@ from thermogo.mobs import Unit
 from thermogo.ui import Cursor, GameCamera
 from thermogo.map import GameMap
 from thermogo.helpers import *
+from thermogo.colors import *
 
 
 class GameObject:
@@ -127,21 +128,21 @@ class GameObject:
 
         for x in range(self.SCREEN_WIDTH):
             for y in range(self.SCREEN_HEIGHT):
-                libtcod.console_set_char_background(gui, x, y, libtcod.Color(100, 100, 100))
+                libtcod.console_set_char_background(gui, x, y, GREY)
         
         if self.paused == True:
             pause_text = "***PAUSED***"
             for x in range(12):
-                libtcod.console_set_char_background(gui, self.camera.width-15+x, 0, libtcod.Color(100, 100, 200))
+                libtcod.console_set_char_background(gui, self.camera.width-15+x, 0, DARK_BLUE)
                 libtcod.console_put_char(gui, self.camera.width-15+x, 0, pause_text[x], libtcod.BKGND_NONE)
-                libtcod.console_set_char_foreground(gui, self.MAX_CAMERA_WIDTH-15+x, 0, libtcod.Color(255, 255, 255))
+                libtcod.console_set_char_foreground(gui, self.MAX_CAMERA_WIDTH-15+x, 0, WHITE)
         
         if self.loading != False:
             loading_text = "***LOADING***"
             for x in xrange(13):
-                libtcod.console_set_char_background(gui, 15+x, 0, libtcod.Color(100, 100, 200))
+                libtcod.console_set_char_background(gui, 15+x, 0, DARK_BLUE)
                 libtcod.console_put_char(gui, 15+x, 0, loading_text[x], libtcod.BKGND_NONE)
-                libtcod.console_set_char_foreground(gui, 15+x, 0, libtcod.Color(255, 255, 255))
+                libtcod.console_set_char_foreground(gui, 15+x, 0, WHITE)
                 
     def force_gui_refresh(self):
         libtcod.console_clear(self.gui_background)
