@@ -22,8 +22,8 @@ class GameObject:
     # Size of border around game windows and menus
     MARGIN_WIDTH = 1
     # Size of the main game view
-    CAMERA_WIDTH = SCREEN_WIDTH-2*MARGIN_WIDTH
-    CAMERA_HEIGHT = SCREEN_HEIGHT-2*MARGIN_WIDTH
+    MAX_CAMERA_WIDTH = SCREEN_WIDTH-2*MARGIN_WIDTH
+    MAX_CAMERA_HEIGHT = SCREEN_HEIGHT-2*MARGIN_WIDTH
     # Size of the togglable right-hand menu
     MENU_WIDTH = 20
     # PNG font used for game
@@ -64,14 +64,14 @@ class GameObject:
         self.con = libtcod.console_new(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
         
         # Libtcod consoles for GUI
-        self.game_view = libtcod.console_new(self.CAMERA_WIDTH, self.CAMERA_HEIGHT)
-        self.infobar = libtcod.console_new(self.CAMERA_WIDTH, self.INFOBAR_HEIGHT)
-        self.menu = libtcod.console_new(self.MENU_WIDTH, self.CAMERA_HEIGHT)
+        self.game_view = libtcod.console_new(self.MAX_CAMERA_WIDTH, self.MAX_CAMERA_HEIGHT)
+        self.infobar = libtcod.console_new(self.MAX_CAMERA_WIDTH, self.INFOBAR_HEIGHT)
+        self.menu = libtcod.console_new(self.MENU_WIDTH, self.MAX_CAMERA_HEIGHT)
         self.gui_background = libtcod.console_new(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
         
     # Starting game and running main loop
     def start_game(self):
-        self.camera = GameCamera(self.gamemap.WORLD_WIDTH/2,self.gamemap.WORLD_HEIGHT/2)
+        self.camera = GameCamera(self.gamemap.WORLD_WIDTH/2,self.gamemap.WORLD_HEIGHT/2, self.MAX_CAMERA_WIDTH, self.MAX_CAMERA_HEIGHT)
         while not libtcod.console_is_window_closed():
             # Render the screen
             self.render_all()
@@ -132,9 +132,9 @@ class GameObject:
         if self.paused == True:
             pause_text = "***PAUSED***"
             for x in range(12):
-                libtcod.console_set_char_background(gui, self.CAMERA_WIDTH-15+x, 0, libtcod.Color(100, 100, 200))
-                libtcod.console_put_char(gui, self.CAMERA_WIDTH-15+x, 0, pause_text[x], libtcod.BKGND_NONE)
-                libtcod.console_set_char_foreground(gui, self.CAMERA_WIDTH-15+x, 0, libtcod.Color(255, 255, 255))
+                libtcod.console_set_char_background(gui, self.camera.width-15+x, 0, libtcod.Color(100, 100, 200))
+                libtcod.console_put_char(gui, self.camera.width-15+x, 0, pause_text[x], libtcod.BKGND_NONE)
+                libtcod.console_set_char_foreground(gui, self.MAX_CAMERA_WIDTH-15+x, 0, libtcod.Color(255, 255, 255))
         
         if self.loading != False:
             loading_text = "***LOADING***"
@@ -150,8 +150,8 @@ class GameObject:
     
     # Method for drawing the main game map on the world view
     def draw_map(self, map, console):
-        for x in range(self.CAMERA_WIDTH):
-            for y in range(self.CAMERA_HEIGHT):
+        for x in range(self.camera.width):
+            for y in range(self.camera.height):
                 pos_x, pos_y = self.camera_to_grid_coordinates(x, y)
                 if pos_y < 0 or pos_y >= map.WORLD_HEIGHT:
                     libtcod.console_put_char(console, x, y, " ", libtcod.BKGND_NONE)
@@ -182,44 +182,46 @@ class GameObject:
         libtcod.console_blit(self.gui_background, 0, 0, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 0, 0, 0)
         # blit the contents of the game_view to the root console
         self.refresh_main_view(self.game_view, self.gamemap)
-        libtcod.console_blit(self.game_view, 0, 0, self.CAMERA_WIDTH, self.CAMERA_HEIGHT, 0, 1, 1)
+        libtcod.console_blit(self.game_view, 0, 0, self.camera.width, self.camera.height, 0, 1, 1)
         # likewise for the infobar, if we're showing it
         if self.show_infobar == True:
             self.refresh_infobar(self.infobar)
-            libtcod.console_blit(self.infobar, 0, 0, self.CAMERA_WIDTH, self.INFOBAR_HEIGHT-self.MARGIN_WIDTH, 0, self.MARGIN_WIDTH, self.SCREEN_HEIGHT - self.INFOBAR_HEIGHT)
+            libtcod.console_blit(self.infobar, 0, 0, self.camera.width, self.INFOBAR_HEIGHT-self.MARGIN_WIDTH, 0, self.MARGIN_WIDTH, self.SCREEN_HEIGHT - self.INFOBAR_HEIGHT)
         # if we're showing the right-side menu, it as well
         if self.show_menu == True:
             self.refresh_menu(self.menu)
             libtcod.console_blit(self.menu, 0, 0, self.MENU_WIDTH - self.MARGIN_WIDTH, self.SCREEN_HEIGHT - self.MARGIN_WIDTH*2, 0, self.SCREEN_WIDTH - self.MENU_WIDTH, 1)
-            
+    
+    CONSOLE_KEY_ACTIONS = {
+        libtcod.KEY_UP: lambda : self.cursor.move(0, -1),
+        libtcod.KEY_DOWN: lambda : self.cursor.move(0, 1),
+        libtcod.KEY_LEFT: lambda : self.cursor.move(-1, 0),
+        libtcod.KEY_RIGHT: lambda : self.cursor.move(1, 0),
+    }
+
+    CHAR_KEY_ACTIONS = {
+        "l": lambda self: self.toggle_menu(),
+        "k": lambda self: self.toggle_infobar(),
+        "[": lambda self: self.camera.move(-1,0),
+        "]": lambda self: self.camera.move(1,0),
+        "-": lambda self: self.camera.zoom(1, self.gamemap.WORLD_HEIGHT),
+        "=": lambda self: self.camera.zoom(-1, self.gamemap.WORLD_HEIGHT),
+        "s": lambda self: self.gamemap.save_map(),
+        "d": lambda self: self.gamemap.load_map(),
+        "g": lambda self: self.gamemap.gen_map(),
+    }
+
     # Handling input and looped elements of the game logic
     def handle_keys(self):
 
         if self.paused == False:
+
+            if self.gui_wait == 0:
+                for key, action in self.CONSOLE_KEY_ACTIONS.items():
+                    if libtcod.console_is_key_pressed(key):
+                        action()
             
-            # Cursor movement keys
-            if libtcod.console_is_key_pressed(libtcod.KEY_UP) and self.gui_wait == 0:
-                self.cursor.move(0,-1)
-         
-            elif libtcod.console_is_key_pressed(libtcod.KEY_DOWN) and self.gui_wait == 0:
-                self.cursor.move(0,1)
-         
-            elif libtcod.console_is_key_pressed(libtcod.KEY_LEFT) and self.gui_wait == 0:
-                self.cursor.move(-1,0)
-         
-            elif libtcod.console_is_key_pressed(libtcod.KEY_RIGHT) and self.gui_wait == 0:
-                self.cursor.move(1,0)
-            
-            # Keeps cursor bounded within camera view
-            (x, y) = self.grid_to_camera_coordinates(self.cursor.x, self.cursor.y)
-            if x < 0:
-                self.cursor.x, _ = self.camera_to_grid_coordinates(0, 0)
-            if x > self.CAMERA_WIDTH-1:
-                self.cursor.x, _ = self.camera_to_grid_coordinates(self.CAMERA_WIDTH-1, 0)
-            if y < 0:
-                _, self.cursor.y = self.camera_to_grid_coordinates(0, 0)
-            if y > self.CAMERA_HEIGHT-1:
-                _, self.cursor.y = self.camera_to_grid_coordinates(0, self.CAMERA_HEIGHT-1)
+            self.lock_cursor_to_view()
 
         if self.gui_wait > 0:
             self.gui_wait -=1
@@ -237,67 +239,57 @@ class GameObject:
         elif key.vk == libtcod.KEY_ESCAPE:
             return True  # exit game
 
-        # Pause and unpause the game
-        '''
-        if libtcod.console_is_key_pressed(libtcod.KEY_SPACE):
-            if self.gui_wait == 0:
-                if self.paused == True:
-                    self.paused = False
-                elif self.paused == False:
-                    self.paused = True
-                self.gui_wait = self.GUI_WAIT
-            '''
-        
-        if key.vk == libtcod.KEY_CHAR:
-            print key.c
-            # Show or hide right-side menu
-            if key.c == ord('l') and self.show_menu == False:
-                self.show_menu = True
-                self.CAMERA_WIDTH = self.CAMERA_WIDTH - self.MENU_WIDTH
-            elif key.c == ord('l') and self.show_menu == True:
-                self.show_menu = False
-                self.CAMERA_WIDTH = self.CAMERA_WIDTH + self.MENU_WIDTH
-                
-            # Show or hide infobar
-            elif key.c == ord('k') and self.show_infobar == False:
-                self.show_infobar = True
-                self.CAMERA_HEIGHT = self.CAMERA_HEIGHT - self.INFOBAR_HEIGHT
-            elif key.c == ord('k') and self.show_infobar == True:
-                self.show_infobar = False
-                self.CAMERA_HEIGHT = self.CAMERA_HEIGHT + self.INFOBAR_HEIGHT
-                
-            # Pans game camera left or right
-            elif key.c == ord('['):
-                self.camera.move(-1,0)
-            elif key.c == ord(']'):
-                self.camera.move(1,0)
-            elif key.c == ord('-'):
-                if self.camera.y >= self.gamemap.WORLD_HEIGHT-self.CAMERA_HEIGHT/2:
-                    self.camera.y = self.gamemap.WORLD_HEIGHT-self.CAMERA_HEIGHT/2
-                else:
-                    self.camera.move(0,1)
-            elif key.c == ord('='):
-                if self.camera.y <= self.CAMERA_HEIGHT/2:
-                    self.camera.y = self.CAMERA_HEIGHT/2
-                else:
-                    self.camera.move(0,-1)
-                
-            # Save and load maps for later use
-            elif key.c == ord("s"):
-                self.gamemap.save_map()
-            elif key.c == ord("d"):
-                self.gamemap.load_map()
-            elif key.c == ord("g"):
-                self.gamemap.gen_map()
+        # # Pause and unpause the game
+        # if libtcod.console_is_key_pressed(libtcod.KEY_SPACE):
+        #    if self.gui_wait == 0:
+        #        if self.paused == True:
+        #            self.paused = False
+        #        elif self.paused == False:
+        #            self.paused = True
+        #        self.gui_wait = self.GUI_WAIT
 
+        if key.vk == libtcod.KEY_CHAR:
+            action = self.CHAR_KEY_ACTIONS.get(key.c)
+            if action:
+                action(self)
+
+    def lock_cursor_to_view(self):
+        x, y = self.grid_to_camera_coordinates(self.cursor.x, self.cursor.y)
+        
+        if x < 0:
+            self.cursor.x, _ = self.camera_to_grid_coordinates(0, 0)
+        if x > self.camera.width - 1:
+            self.cursor.x, _ = self.camera_to_grid_coordinates(self.camera.width - 1, 0)
+
+        if y < 0:
+            _, self.cursor.y = self.camera_to_grid_coordinates(0, 0)
+        if y > self.camera.height - 1:
+            _, self.cursor.y = self.camera_to_grid_coordinates(0, self.camera.height - 1)
+
+
+    def toggle_menu(self):
+        self.show_menu = not self.show_menu
+        if self.show_menu:
+            self.camera.width = self.MAX_CAMERA_WIDTH - self.MENU_WIDTH
+        else:
+            self.camera.width = self.MAX_CAMERA_WIDTH
+       
+    def toggle_infobar(self):
+        self.show_infobar = not self.show_infobar
+        if self.show_infobar:
+            self.camera.height = self.MAX_CAMERA_HEIGHT - self.INFOBAR_HEIGHT
+        else:
+            self.camera.height = self.MAX_CAMERA_HEIGHT
     
     # Converting world coordinates to camera coordinates
     def grid_to_camera_coordinates(self, x, y):
-        x, y = (x - self.camera.x + self.CAMERA_WIDTH/2, y - self.camera.y + self.CAMERA_HEIGHT/2)
+        x = x - self.camera.x + self.camera.width/2
+        y = y - self.camera.y + self.camera.height/2
         return x, y
         
     def camera_to_grid_coordinates(self, x, y):
-        x, y = (x - self.CAMERA_WIDTH/2 + self.camera.x, y - self.CAMERA_HEIGHT/2 + self.camera.y)
+        x = x - self.camera.width/2 + self.camera.x
+        y = y - self.camera.height/2 + self.camera.y
         return x, y
         
     def spherical_to_grid_coordinates(self, lo, la):

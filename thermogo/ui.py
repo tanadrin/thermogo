@@ -3,7 +3,7 @@ import tcod as libtcod
 from thermogo.mobs import Unit
 
 class Cursor(Unit):
-    
+
     def __init__(self, x, y):
         # lo and la are longitude and latitude
         self.x, self.y = x, y
@@ -35,12 +35,27 @@ class Cursor(Unit):
 # move one and not the other
 class GameCamera:
 
-    def __init__(self, x = 0, y = 0):
+    def __init__(self, x = 0, y = 0, width = 1, height = 1):
         self.x = x
         self.y = y
+        self.width = width
+        self.height = height
 
     # Doesn't use Decimal() since it's only relative to the grid projection of 
     # the gameworld sphere
     def move(self, dx, dy):
         self.x += dx
         self.y += dy
+
+    def zoom(self, dz, world_height):
+        if dz < 0:
+            if self.camera.y >= world_height - self.height/2:
+                self.camera.y = world_height - self.height/2
+            else:
+                self.camera.move(0,1)
+        else:
+            if self.camera.y <= self.height/2:
+                self.camera.y = self.height/2
+            else:
+                self.camera.move(0,-1)
+                
