@@ -4,11 +4,11 @@ from decimal import Decimal
 from thermogo.colors import WHITE
 
 class Unit:
-    def __init__(self, x, y, objects):
+    def __init__(self, x, y, objects, char="@", color=WHITE, name="Unit"):
         self.x, self.y = x, y
-        self.char = "@"
-        self.color = WHITE
-        self.name = "Unit"
+        self.char = char
+        self.color = color
+        self.name = NAME
     
     # Generic movement on a sphere. Kind of.
     # Uses Decimal() since this is actual game-world coords. on surface of the sphere

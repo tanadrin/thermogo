@@ -6,15 +6,14 @@ from thermogo.colors import YELLOW
 class Cursor(Unit):
 
     def __init__(self, x, y):
-        self.x, self.y = x, y
-
         self.char0 = "X"
         self.char1 = " "
-        self.char = self.char0
-
-        self.color = YELLOW
-        self.wait = 5
-        self.name = "Cursor"
+        
+        super(Cursor, self).__init__(x, y,
+            name="Cursor",
+            color=YELLOW,
+            char=self.char0
+        )
     
     def move(self, x, y):
         """
