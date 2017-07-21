@@ -113,17 +113,26 @@ class GameObject:
         self.draw_map(self.gamemap, main_view)
         for obj in self.objects:
             if obj.name != 'Cursor':
-                self.draw_object(obj, main_view)
-            if obj.name == 'Cursor':
+                self.draw_world_object(obj, main_view)
+            else:
                 self.draw_grid_object(obj, main_view)
         # Add logic to display stuff on main view here
         
     def refresh_menu(self, menu):
         libtcod.console_clear(menu)
         # Add logic to change contents of menu here
-        
-    # While the game is running, render a solid background to use as border between other GUI elements
+
+    def _write_banner(self, text, x, y, bgcolor=DARK_BLUE, fgcolor=WHITE):
+        for k in range(12):
+            libtcod.console_set_char_background(gui, self.camera.width - x + k, 0, bgcolor)
+            libtcod.console_put_char(gui, self.camera.width - x + k, 0, pause_text[x], libtcod.BKGND_NONE)
+            libtcod.console_set_char_foreground(gui, self.MAX_CAMERA_WIDTH-x+k, 0, fgcolor)
+
     def refresh_gui_background(self, gui):
+        """
+        While the game is running, render a solid background to use as border
+        between other GUI elements
+        """
         libtcod.console_clear(gui)
 
         for x in range(self.SCREEN_WIDTH):
@@ -131,25 +140,20 @@ class GameObject:
                 libtcod.console_set_char_background(gui, x, y, GREY)
         
         if self.paused == True:
-            pause_text = "***PAUSED***"
-            for x in range(12):
-                libtcod.console_set_char_background(gui, self.camera.width-15+x, 0, DARK_BLUE)
-                libtcod.console_put_char(gui, self.camera.width-15+x, 0, pause_text[x], libtcod.BKGND_NONE)
-                libtcod.console_set_char_foreground(gui, self.MAX_CAMERA_WIDTH-15+x, 0, WHITE)
+            self._write_banner("***PAUSED***", 15, 0)
         
         if self.loading != False:
-            loading_text = "***LOADING***"
-            for x in xrange(13):
-                libtcod.console_set_char_background(gui, 15+x, 0, DARK_BLUE)
-                libtcod.console_put_char(gui, 15+x, 0, loading_text[x], libtcod.BKGND_NONE)
-                libtcod.console_set_char_foreground(gui, 15+x, 0, WHITE)
+            self._write_banner("***LOADING***", 15, 0)
                 
     def force_gui_refresh(self):
         libtcod.console_clear(self.gui_background)
         self.refresh_gui_background(self.gui_background)
         libtcod.console_blit(self.gui_background, 0, 0, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 0, 0, 0)
     
-    # Method for drawing the main game map on the world view
+    #
+    # Main world/game view drawing
+    #
+
     def draw_map(self, map, console):
         for x in range(self.camera.width):
             for y in range(self.camera.height):
@@ -160,22 +164,24 @@ class GameObject:
                     pos_x = pos_x % map.WORLD_WIDTH
                     libtcod.console_set_default_foreground(console, map.grid[pos_x][pos_y].color)
                     libtcod.console_put_char(console, x, y, map.grid[pos_x][pos_y].char, libtcod.BKGND_NONE)
-        
-    # Method for drawing objects in the game world on the main view
-    def draw_object(self, obj, console):
-        pos_x, pos_y = self.spherical_to_camera_coordinates(obj.lo, obj.la)
+
+    def _draw_obj(self, pos_x, pos_y, obj):
         if pos_x is not None and obj.char != ' ':
             libtcod.console_set_default_foreground(console, obj.color)
             libtcod.console_put_char(console, pos_x, pos_y, obj.char, libtcod.BKGND_NONE)
+        
+    def draw_world_object(self, obj, console):
+        pos_x, pos_y = self.spherical_to_camera_coordinates(obj.lo, obj.la)
+        self._draw_obj(pos_x, pos_y, obj)
             
     def draw_grid_object(self, obj, console):
         pos_x, pos_y = self.grid_to_camera_coordinates(obj.x, obj.y)
-        if pos_x is not None and obj.char != ' ':
-            libtcod.console_set_default_foreground(console, obj.color)
-            libtcod.console_put_char(console, pos_x, pos_y, obj.char, libtcod.BKGND_NONE)
+        self._draw_obj(pos_x, pos_y, obj)
         
-    # Rendering the main view and GUI elements
     def render_all(self):
+        """
+        Rendering the main view and GUI elements
+        """
         # blit the contents of "con" to the root console
         libtcod.console_blit(self.con, 0, 0, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 0, 0, 0)
         # blit the contents of the GUI background to the root console
@@ -193,6 +199,10 @@ class GameObject:
             self.refresh_menu(self.menu)
             libtcod.console_blit(self.menu, 0, 0, self.MENU_WIDTH - self.MARGIN_WIDTH, self.SCREEN_HEIGHT - self.MARGIN_WIDTH*2, 0, self.SCREEN_WIDTH - self.MENU_WIDTH, 1)
     
+    #
+    # Controls & UI actions
+    #
+
     CONSOLE_KEY_ACTIONS = {
         libtcod.KEY_UP: lambda : self.cursor.move(0, -1),
         libtcod.KEY_DOWN: lambda : self.cursor.move(0, 1),
@@ -212,7 +222,6 @@ class GameObject:
         "g": lambda self: self.gamemap.gen_map(),
     }
 
-    # Handling input and looped elements of the game logic
     def handle_keys(self):
 
         if self.paused == False:
@@ -282,7 +291,10 @@ class GameObject:
         else:
             self.camera.height = self.MAX_CAMERA_HEIGHT
     
-    # Converting world coordinates to camera coordinates
+    #
+    # Coordinate conversion utility functions
+    #
+
     def grid_to_camera_coordinates(self, x, y):
         x = x - self.camera.x + self.camera.width/2
         y = y - self.camera.y + self.camera.height/2
@@ -294,7 +306,10 @@ class GameObject:
         return x, y
         
     def spherical_to_grid_coordinates(self, lo, la):
-        # Given a latitude from -90 to 90 and a longitude from -180 to 180, return x, y on a grid from 0 to world width and 0 to world height
+        """
+        Given a latitude from -90 to 90 and a longitude from -180 to 180, 
+        return x, y on a grid from 0 to world width and 0 to world height
+        """
         x = int((lo + 90)*(self.gamemap.WORLD_WIDTH/180))
         y = int((la + 180)*(self.gamemap.WORLD_HEIGHT/90))
         return x, y

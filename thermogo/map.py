@@ -23,7 +23,12 @@ class GameMap:
             row = []
         
             for y in xrange(self.world_height):
-                row.append(GridCoordinate(x, y, self.world_width, self.world_height, self.world_noise))
+                coord = GridCoordinate(x, y, 
+                    self.world_width, 
+                    self.world_height, 
+                    self.world_noise,
+                )
+                row.append(coord)
         
             self.grid.append(row)
         
@@ -47,7 +52,12 @@ class GameMap:
         for x in xrange(self.world_width):
             row = []
             for y in xrange(self.world_height):
-                row.append(GridCoordinate(x, y, self.world_width, self.world_height, self.world_noise))
+                coord = GridCoordinate(x, y, 
+                    self.world_width, 
+                    self.world_height, 
+                    self.world_noise,
+                )
+                row.append(coord)
             self.grid.append(row)
 
         libtcod.noise_delete(self.world_noise)
@@ -106,7 +116,11 @@ class GridCoordinate:
         
         # Sampling 3d noise to get the shape of the landmasses
         x, y, z = spherical_to_cartesian(self.la, self.lo, self.LANDMASS_SIZE)
-        self.elevation = libtcod.noise_get_fbm(world_noise, [float(x), float(y), float(z)], self.DETAIL)
+        self.elevation = libtcod.noise_get_fbm(world_noise, [
+            float(x),
+            float(y),
+            float(z)
+        ], self.DETAIL)
 
         for elev_range, elev_info in self.ELEVATIONS.items():
             max_, min_ = elev_range
