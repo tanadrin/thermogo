@@ -4,9 +4,12 @@ import tcod as libtcod
 from decimal import Decimal
 
 from thermogo.helpers import spherical_to_cartesian
+from thermogo.colors import *
 
-# A latitude-longitude grid with height data
 class GameMap:
+    """
+    A latitude-longitude grid with height data.
+    """
 
     def __init__(self, mapsize):
         self.world_width = mapsize
@@ -15,11 +18,15 @@ class GameMap:
         self.grid = []
         self.world_noise = libtcod.noise_new(3)
         self.name = "map_name"
+
         for x in xrange(self.world_width):
             row = []
+        
             for y in xrange(self.world_height):
                 row.append(GridCoordinate(x, y, self.world_width, self.world_height, self.world_noise))
+        
             self.grid.append(row)
+        
         libtcod.noise_delete(self.world_noise)
             
     def save_map(self):
@@ -58,36 +65,51 @@ class GridCoordinate:
     LANDMASS_SIZE = 2
     DETAIL = 64.0
 
+    ELEVATIONS = {
+        (1, 0.8): {
+            "color": libtcod.Color(202,163,85),
+            "char": "A"
+        },
+        (0.8, 0.6): {
+            "color": libtcod.Color(145,162,78),
+            "char": "a"
+        },
+        (0.6, 0.4): {
+            "color": libtcod.Color(129,162,76),
+            "char": "n"
+        },
+        (0.4, 0.2): {
+            "color": libtcod.Color(82,162,71),
+            "char": "8"
+        },
+        (0.2, 0): {
+            "color": libtcod.Color(49,162,67),
+            "char": "8"
+        },
+        (0, -0.5): {
+            "color": libtcod.Color(50,50,220),
+            "char": "S"
+        },
+        (-0.5, -1): {
+            "color": libtcod.Color(0,0,150),
+            "char": "s"
+        },
+    }
+
     def __init__(self, x, y, world_width, world_height, world_noise):
         
         self.x, self.y = x, y
         self.la = ((Decimal(self.y)*180)/Decimal(world_height))-90
         self.lo = ((Decimal(self.x)*360)/Decimal(world_width))-180
         self.char = "#"
-        self.color = libtcod.Color(255,255,255)
+        self.color = WHITE
         
         # Sampling 3d noise to get the shape of the landmasses
         x, y, z = spherical_to_cartesian(self.la, self.lo, self.LANDMASS_SIZE)
-        self.elevation = libtcod.noise_get_fbm(world_noise,[float(x),float(y),float(z)],self.DETAIL)
+        self.elevation = libtcod.noise_get_fbm(world_noise, [float(x), float(y), float(z)], self.DETAIL)
 
-        if 1 >= self.elevation > 0.8:
-            self.color = libtcod.Color(202,163,85)
-            self.char = "A"
-        elif 0.8 >= self.elevation > 0.6:
-            self.color = libtcod.Color(145,162,78)
-            self.char = "a"
-        elif 0.6 >= self.elevation > 0.4:
-            self.color = libtcod.Color(129,162,76)
-            self.char = "n"
-        elif 0.4 >= self.elevation > 0.2:
-            self.color = libtcod.Color(82,162,71)
-            self.char = "8"
-        elif 0.2 >= self.elevation > 0.0:
-            self.color = libtcod.Color(49,162,67)
-            self.char = "8"
-        elif 0.0 >= self.elevation > -0.5:
-            self.color = libtcod.Color(50,50,220)
-            self.char = "S"
-        elif -0.5 >= self.elevation >= -1:
-            self.color = libtcod.Color(0,0,150)
-            self.char = "s"
+        for elev_range, elev_info in self.ELEVATIONS.items():
+            max_, min_ = elev_range
+            if max_ >= self.elevation > min_:
+                self.color = elev.info["color"]
+                self.char = elev.info["char"]
