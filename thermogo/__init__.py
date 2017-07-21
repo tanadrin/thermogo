@@ -13,31 +13,27 @@ from thermogo.helpers import *
 from thermogo.colors import *
 
 
-class GameObject:
+class GameUI:
+    """
+    Class for handling the non-game view UI elements, like menus and overlays.
+    """
 
-    # GUI and map variables
-    SCREEN_WIDTH = 182
-    SCREEN_HEIGHT = SCREEN_WIDTH/2+1
     # Height of GUI pane on bottom of the screen, the "infobar"
     INFOBAR_HEIGHT = 10
     # Size of border around game windows and menus
     MARGIN_WIDTH = 1
-    # Size of the main game view
-    MAX_CAMERA_WIDTH = SCREEN_WIDTH-2*MARGIN_WIDTH
-    MAX_CAMERA_HEIGHT = SCREEN_HEIGHT-2*MARGIN_WIDTH
     # Size of the togglable right-hand menu
     MENU_WIDTH = 20
     # PNG font used for game
     GAME_FONT = 'assets/arial10x10.png'
     # Maximum game FPS; 1 frame is the basic unit of in-game time
     LIMIT_FPS = 20
-    # Directory to save map files in
-    MAP_DIRECTORY = 'map/'
     # Minimum frame intervals between GUI events
     GUI_WAIT = 0
-    
-    def __init__(self):
-        
+
+    def __init__(self, game_object):
+        self.game_object = game_object
+
         # Game state and GUI control variables
         # Whether the additional views are shown or hidden
         self.show_menu = False
@@ -48,75 +44,45 @@ class GameObject:
         self.gui_wait = 0
         # Main camera object
         self.camera = None
-        # All objects currently being simulated in the game
-        self.objects = []
-        
-        self.paused = False
-        self.loading = False
-        self.mapsize = self.SCREEN_WIDTH-self.MARGIN_WIDTH*2
+
         self.cursor = Cursor(0, 0)
-        self.objects.append(self.cursor)
-        self.gamemap = GameMap(self.mapsize)
         
         # Main libtcod console and parameters
         libtcod.console_set_custom_font(self.GAME_FONT, libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_TCOD)
-        libtcod.console_init_root(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 'Thermonuclear Go', False)
+        libtcod.console_init_root(game_object.SCREEN_WIDTH, game_object.SCREEN_HEIGHT, 'Thermonuclear Go', False)
         libtcod.sys_set_fps(self.LIMIT_FPS)
         self.con = libtcod.console_new(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
         
         # Libtcod consoles for GUI
-        self.game_view = libtcod.console_new(self.MAX_CAMERA_WIDTH, self.MAX_CAMERA_HEIGHT)
-        self.infobar = libtcod.console_new(self.MAX_CAMERA_WIDTH, self.INFOBAR_HEIGHT)
-        self.menu = libtcod.console_new(self.MENU_WIDTH, self.MAX_CAMERA_HEIGHT)
-        self.gui_background = libtcod.console_new(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
-        
-    # Starting game and running main loop
-    def start_game(self):
-        self.camera = GameCamera(self.gamemap.WORLD_WIDTH/2,self.gamemap.WORLD_HEIGHT/2, self.MAX_CAMERA_WIDTH, self.MAX_CAMERA_HEIGHT)
-        while not libtcod.console_is_window_closed():
-            # Render the screen
-            self.render_all()
-            libtcod.console_flush()
-            # Erase all objects at their old locations, before they move
-            # for object in self.objects:
-            #    object.clear()
-            # Handle keys and exit game if needed
-            exit = game.handle_keys()
-            if exit:
-                break
-                
+        self.infobar = libtcod.console_new(game_object.GAME_WIDTH, self.INFOBAR_HEIGHT)
+        self.menu = libtcod.console_new(self.MENU_WIDTH, game_object.GAME_HEIGHT)
+        self.gui_background = libtcod.console_new(game_object.SCREEN_WIDTH, game_object.SCREEN_HEIGHT)
+
     def refresh_infobar(self, infobar):
         libtcod.console_clear(infobar)
         
-        actual_x, actual_y = self.cursor.x % self.gamemap.WORLD_WIDTH, self.cursor.y % self.gamemap.WORLD_HEIGHT
+        gamemap = self.game_object.game_view.gamemap
+
+        actual_x = self.cursor.x % gamemap.WORLD_WIDTH
+        actual_y = self.cursor.y % gamemap.WORLD_HEIGHT
         
-        infobar_text = "Cursor grid: "+str(actual_x)+ ", "+str(actual_y)
-        infobar_text2 = "Cursor lat: "+str(self.gamemap.grid[actual_x][actual_y].la)
-        infobar_text3 = "Cursor long: "+str(self.gamemap.grid[actual_x][actual_y].lo)
+        infobar_texts = [
+            "Cursor grid: %s, %s" % (actual_x, actual_y)
+            "Cursor lat: %s" % gamemap.grid[actual_x][actual_y].la
+            "Cursor long: %s" % gamemap.grid[actual_x][actual_y].lo
+        ]
         
         if self.gamemap.grid[actual_x][actual_y].elevation > 0:
-            infobar_text4 = "Elevation: "+str(int(self.gamemap.grid[actual_x][actual_y].elevation*4000))+"m"
+            text = "Elevation: %sm" % int(self.gamemap.grid[actual_x][actual_y].elevation*4000)
         else:
-            infobar_text4 = "Elevation: Sea level"
+            text = "Elevation: Sea level"
+        infobar_texts.append(text)
         
-        infobar_text5 = "s: save terrain; d: load terrain; g: gen terrain; k: hide infobar"
+        infobar_texts.append("s: save terrain; d: load terrain; g: gen terrain; k: hide infobar")
 
-        libtcod.console_print(infobar, 0, 0, infobar_text)
-        libtcod.console_print(infobar, 0, 1, infobar_text2)
-        libtcod.console_print(infobar, 0, 2, infobar_text3)
-        libtcod.console_print(infobar, 0, 3, infobar_text4)
-        libtcod.console_print(infobar, 0, 4, infobar_text5)
+        for text, i in enumerate(infobar_texts):
+            libtcod.console_print(infobar, 0, i, text)
         # Add logic here to display new infobar information as needed
-        
-    def refresh_main_view(self, main_view, map):
-        libtcod.console_clear(main_view)
-        self.draw_map(self.gamemap, main_view)
-        for obj in self.objects:
-            if obj.name != 'Cursor':
-                self.draw_world_object(obj, main_view)
-            else:
-                self.draw_grid_object(obj, main_view)
-        # Add logic to display stuff on main view here
         
     def refresh_menu(self, menu):
         libtcod.console_clear(menu)
@@ -126,7 +92,7 @@ class GameObject:
         for k in range(12):
             libtcod.console_set_char_background(gui, self.camera.width - x + k, 0, bgcolor)
             libtcod.console_put_char(gui, self.camera.width - x + k, 0, pause_text[x], libtcod.BKGND_NONE)
-            libtcod.console_set_char_foreground(gui, self.MAX_CAMERA_WIDTH-x+k, 0, fgcolor)
+            libtcod.console_set_char_foreground(gui, self.GAME_WIDTH-x+k, 0, fgcolor)
 
     def refresh_gui_background(self, gui):
         """
@@ -149,10 +115,32 @@ class GameObject:
         libtcod.console_clear(self.gui_background)
         self.refresh_gui_background(self.gui_background)
         libtcod.console_blit(self.gui_background, 0, 0, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 0, 0, 0)
-    
-    #
-    # Main world/game view drawing
-    #
+
+        
+class GameView:
+    """
+    Class for handling the main view of the game world
+    """
+
+    def __init__(self, game_object):
+        self.game_object = game_object
+        self.mapsize = game_object.SCREEN_WIDTH - game_object.MARGIN_WIDTH*2
+        
+        self.gamemap = GameMap(self.mapsize)
+        self.view = libtcod.console_new(self.GAME_WIDTH, self.GAME_HEIGHT)
+
+    def create_camera(self):
+        self.camera = GameCamera(self.gamemap.WORLD_WIDTH/2,self.gamemap.WORLD_HEIGHT/2, self.GAME_WIDTH, self.GAME_HEIGHT)
+
+    def refresh_main_view(self, main_view, map):
+        libtcod.console_clear(main_view)
+        self.draw_map(self.gamemap, main_view)
+        for obj in self.objects:
+            if obj.name != 'Cursor':
+                self.draw_world_object(obj, main_view)
+            else:
+                self.draw_grid_object(obj, main_view)
+        # Add logic to display stuff on main view here
 
     def draw_map(self, map, console):
         for x in range(self.camera.width):
@@ -199,9 +187,47 @@ class GameObject:
             self.refresh_menu(self.menu)
             libtcod.console_blit(self.menu, 0, 0, self.MENU_WIDTH - self.MARGIN_WIDTH, self.SCREEN_HEIGHT - self.MARGIN_WIDTH*2, 0, self.SCREEN_WIDTH - self.MENU_WIDTH, 1)
     
-    #
-    # Controls & UI actions
-    #
+
+class GameObject:
+    """
+    Wrapper object for the whole shebang
+    """
+
+    # GUI and map variables
+    SCREEN_WIDTH = 182
+    SCREEN_HEIGHT = SCREEN_WIDTH/2+1
+    # Size of the main game view
+    GAME_WIDTH = SCREEN_WIDTH-2*MARGIN_WIDTH
+    GAME_HEIGHT = SCREEN_HEIGHT-2*MARGIN_WIDTH
+    # Directory to save map files in
+    MAP_DIRECTORY = 'map/'
+    
+    def __init__(self):
+        self.ui = UI(self)
+        self.game_view = GameView(self)
+
+        # All objects currently being simulated in the game
+        self.objects = []
+        
+        self.paused = False
+        self.loading = False
+
+    # Starting game and running main loop
+    def start_game(self):
+        self.game_view.create_camera()
+        while not libtcod.console_is_window_closed():
+            # Render the screen
+            self.ui.render_all()
+            self.game_view.render_all()
+            libtcod.console_flush()
+            # Erase all objects at their old locations, before they move
+            # for object in self.objects:
+            #    object.clear()
+            # Handle keys and exit game if needed
+            exit = game.handle_keys()
+            if exit:
+                break
+               
 
     CONSOLE_KEY_ACTIONS = {
         libtcod.KEY_UP: lambda : self.cursor.move(0, -1),
@@ -280,16 +306,16 @@ class GameObject:
     def toggle_menu(self):
         self.show_menu = not self.show_menu
         if self.show_menu:
-            self.camera.width = self.MAX_CAMERA_WIDTH - self.MENU_WIDTH
+            self.camera.width = self.GAME_WIDTH - self.MENU_WIDTH
         else:
-            self.camera.width = self.MAX_CAMERA_WIDTH
+            self.camera.width = self.GAME_WIDTH
        
     def toggle_infobar(self):
         self.show_infobar = not self.show_infobar
         if self.show_infobar:
-            self.camera.height = self.MAX_CAMERA_HEIGHT - self.INFOBAR_HEIGHT
+            self.camera.height = self.GAME_HEIGHT - self.INFOBAR_HEIGHT
         else:
-            self.camera.height = self.MAX_CAMERA_HEIGHT
+            self.camera.height = self.GAME_HEIGHT
     
     #
     # Coordinate conversion utility functions
