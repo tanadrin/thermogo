@@ -10,6 +10,9 @@ class Infobar:
         2 : 'Cursor elevation: ',
         3 : 's: save terrain; d: load terrain; g: gen terrain; k: hide infobar'
     }
+        
+    LOADING_TEXT = '***LOADING***'
+    PAUSED_TEXT = '***PAUSED***'
 
     def __init__(self, width, height):
         self.show = False
@@ -174,7 +177,6 @@ class GameUI:
                 )
                 
         if self.paused == True:
-            pause_text = '***PAUSED***'
             for x in range(12):
                 libtcod.console_set_char_background(
                     console, 
@@ -186,7 +188,7 @@ class GameUI:
                     console, 
                     self.camera.width-15+x, 
                     0, 
-                    pause_text[x], 
+                    self.PAUSED_TEXT[x], 
                     libtcod.BKGND_NONE
                 )
                 libtcod.console_set_char_foreground(
@@ -196,9 +198,7 @@ class GameUI:
                     WHITE
                 )
                 
-        if self.loading != False:
-        
-            loading_text = '***LOADING***'
+        if self.loading == True:
             
             for x in xrange(13):
                 libtcod.console_set_char_background(
@@ -211,7 +211,7 @@ class GameUI:
                     console, 
                     15+x, 
                     0, 
-                    loading_text[x], 
+                    self.LOADING[x], 
                     libtcod.BKGND_NONE
                 )
                 libtcod.console_set_char_foreground(

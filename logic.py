@@ -16,6 +16,8 @@ from mapping import *
 from colors import *
 from player import *
 
+import time
+
 
 
 # Game state and game logic, except input,
@@ -41,6 +43,7 @@ class GameObject:
         # Background cleanup
         self.cleanup_interval = cleanup_interval
         self.cleanup_timer = cleanup_interval
+        self.event_queue = EventQueue()
         
     def run_cleanup(self):
         '''
@@ -82,7 +85,7 @@ class GameObject:
         cursor.lo = self.game_map.grid[cursor.x][cursor.y].lo
         return cursor.la, cursor.lo
             
-    def save_map(self):
+    def save_map(self, ui):
         '''
         Saves all data associated with the current gamemap and all persistent objects
         (but not anything to do with the interface)
@@ -97,12 +100,14 @@ class GameObject:
         else:
             savefile['persistent_objects'] = None
         savefile.close()
+        self.event_queue.add_event(self.clear_loading(ui), 5)
                 
     def load_map(self, ui, map='map_name'):
         '''
         Loads all saved map data from the specified file, including persistent
         objects, and updates the UI if necessary
         '''
+        
         if ui.camera == None:
             ui.camera = GameCamera(0, ui.max_camera_height/2, ui.max_camera_width, ui.max_camera_height)
             
@@ -119,6 +124,7 @@ class GameObject:
             ui.cursor = Cursor(0,0)
             self.interface_objects.append(ui.cursor)
         loadfile.close()
+        self.event_queue.add_event(self.clear_loading(ui), 5)
         
     def gen_map(self, ui):
         self.persistent_objects = []
@@ -128,6 +134,7 @@ class GameObject:
         ui.camera = GameCamera(0, ui.max_camera_height/2, ui.max_camera_width, ui.max_camera_height)
         self.players = self.create_players(self.max_players)
         self.active_player = self.players[0]
+        self.event_queue.add_event(self.clear_loading(ui), 5)
     
     def unload_map(self, ui):
         self.game_map = None
@@ -174,6 +181,8 @@ class GameObject:
         '''
         if self.game_map != None and self.persistent_objects != None:
             self.run_cleanup()
+            
+        self.event_queue.tick()
 
     # Force spawn a base for debugging purposes
     def force_spawn(self, cursor):
@@ -189,3 +198,36 @@ class GameObject:
             if object.char == " " and object.name == "DEAD":
                 self.persistent_objects.remove(object)
                 self.active_player.owned_objects.remove(object)
+                
+    def clear_loading(self, ui):
+        self.loading = False
+        ui.loading = False
+        print 'end gen'
+
+# For handling function calls that don't need to be immediately executed
+class EventQueue:
+    def __init__(self):
+        self.queue = []
+        self.delay = 0
+        
+    def add_event(self, event, delay):
+        self.queue.append(event)
+        self.add_delay(delay)
+        
+    def execute_event(self):
+        if self.queue != False:
+            self.queue[0]()
+            self.queue.pop(0)
+        
+    def execute_all(self):
+        if self.queue != False:
+            for i in self.queue:
+                self.queue[i]()
+                self.queue = []
+                
+    def add_delay(self, i):
+        self.delay += i
+        
+    def tick(self):
+        self.delay -= 1
+        

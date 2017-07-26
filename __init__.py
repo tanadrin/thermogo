@@ -17,6 +17,8 @@ from colors import *
 from player import *
 from logic import *
 
+import time
+
 
 class GameController:
     # GUI and map variables
@@ -34,8 +36,8 @@ class GameController:
     # Game settings
     # Maximum game FPS; 1 frame is the basic unit of in-game time
     LIMIT_FPS = 20
-    # Minimum frame intervals between GUI events
-    GUI_WAIT = 0
+    # Minimum frame intervals between certain GUI events
+    MAX_GUI_WAIT = 300
     # Minimum frame interval for certain background processes, like cleaning up dead objects
     MAX_BACKGROUND_WAIT = 20
     # Maximum number of players in a hotseat multiplayer game
@@ -43,9 +45,7 @@ class GameController:
     
     def __init__(self):
         
-        # Input control variable; used to prevent some actions from happening 
-        # too often
-        self.gui_wait = 0
+        self.gui_wait = self.MAX_GUI_WAIT
         
         self.game_object = GameObject(
             self.SCREEN_WIDTH-self.MARGIN_WIDTH*2, 
@@ -81,29 +81,29 @@ class GameController:
                 self.game_ui.cursor
             )
             
-            exit = game.handle_keys()
+            exit = game_controller.handle_keys()
             
             if exit:
                 break
         
     
     CONSOLE_KEY_ACTIONS = {
-        libtcod.KEY_UP: lambda self : self.game_ui.cursor.move(0,-1),
-        libtcod.KEY_DOWN: lambda self : self.game_ui.cursor.move(0,1),
-        libtcod.KEY_LEFT: lambda self : self.game_ui.cursor.move(-1,0),
-        libtcod.KEY_RIGHT: lambda self : self.game_ui.cursor.move(1,0)
+        libtcod.KEY_UP: lambda self : self.game_ui.cursor.move( 0,-1),
+        libtcod.KEY_DOWN: lambda self : self.game_ui.cursor.move( 0, 1),
+        libtcod.KEY_LEFT: lambda self : self.game_ui.cursor.move(-1, 0),
+        libtcod.KEY_RIGHT: lambda self : self.game_ui.cursor.move( 1 ,0)
     }
 
     CHAR_KEY_ACTIONS = {
         ord('l'): lambda self : self.game_ui.toggle_menu(self.game_ui.camera),
         ord('k'): lambda self : self.game_ui.toggle_infobar(self.game_ui.camera),
-        ord('['): lambda self : self.game_ui.camera.move(-1,0, self.game_object.game_map.world_height),
-        ord(']'): lambda self : self.game_ui.camera.move(1,0, self.game_object.game_map.world_height),
-        ord('-'): lambda self : self.game_ui.camera.move(0,1, self.game_object.game_map.world_height),
-        ord('='): lambda self : self.game_ui.camera.move(0,-1, self.game_object.game_map.world_height),
-        ord('s'): lambda self : self.game_object.save_map(),
-        ord('d'): lambda self : self.game_object.load_map(self.game_ui),
-        ord('g'): lambda self : self.game_object.gen_map(self.game_ui),
+        ord('['): lambda self : self.camera_pan(-1, 0),
+        ord(']'): lambda self : self.camera_pan( 1, 0),
+        ord('-'): lambda self : self.camera_pan( 0, 1),
+        ord('='): lambda self : self.camera_pan( 0,-1),
+        ord('s'): lambda self : self.begin_save(self.game_ui, self.MAX_GUI_WAIT),
+        ord('d'): lambda self : self.begin_load(self.game_ui, self.MAX_GUI_WAIT),
+        ord('g'): lambda self : self.begin_gen(self.game_ui, self.MAX_GUI_WAIT),
         ord('q'): lambda self : self.game_object.pass_turn(),
         ord('w'): lambda self : self.game_object.force_spawn(self.game_ui.cursor),
         ord('e'): lambda self : self.game_object.force_kill(),
@@ -113,7 +113,7 @@ class GameController:
     def handle_keys(self):
         key = libtcod.console_check_for_keypress()  # real-time
         
-        if self.gui_wait == 0 and self.game_ui.cursor != None:
+        if self.game_ui.cursor != None:
             for input, action in self.CONSOLE_KEY_ACTIONS.items():
                 if libtcod.console_is_key_pressed(input):
                     action(self)
@@ -124,8 +124,6 @@ class GameController:
         self.game_ui.cycle()
         self.game_object.cycle()
             
-        if self.gui_wait > 0:
-            self.gui_wait -= 1
         
         if key.vk == libtcod.KEY_ESCAPE and self.game_object.game_map != None:
             self.game_object.unload_map(self.game_ui)
@@ -137,6 +135,32 @@ class GameController:
             action = self.CHAR_KEY_ACTIONS.get(key.c)
             if action:
                 action(self)
+                
+        if self.gui_wait > 0:
+            self.gui_wait -= 1
+    
+    # Throttle camera movement according to GUI input limits
+    def camera_pan(self, x, y):
+        if self.gui_wait <= 0:
+            self.gui_wait = self.MAX_GUI_WAIT
+            self.game_ui.camera.move(x , y, self.game_object.game_map.world_height)
+            
+    def begin_load(self, ui, delay):
+        self.game_ui.loading = True
+        self.game_object.loading = True
+        self.game_object.event_queue.add_event(self.game_object.load_map(ui), delay)
+        
+    def begin_save(self, ui, delay):
+        self.game_ui.loading = True
+        self.game_object.loading = True
+        self.game_object.event_queue.add_event(self.game_object.save_map(ui), delay)
+        
+    def begin_gen(self, ui, delay):
+        self.game_ui.loading = True
+        self.game_object.loading = True
+        self.game_object.event_queue.add_event(self.game_object.gen_map(ui), delay)
+        print 'start gen'
+    
                 
 def main():
     global game_controller
