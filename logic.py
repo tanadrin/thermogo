@@ -100,7 +100,7 @@ class GameObject:
         else:
             savefile['persistent_objects'] = None
         savefile.close()
-        self.event_queue.add_event(self.clear_loading(ui), 5)
+        self.event_queue.add_event(5, self.clear_loading, (ui,))
                 
     def load_map(self, ui, map='map_name'):
         '''
@@ -124,7 +124,7 @@ class GameObject:
             ui.cursor = Cursor(0,0)
             self.interface_objects.append(ui.cursor)
         loadfile.close()
-        self.event_queue.add_event(self.clear_loading(ui), 5)
+        self.event_queue.add_event(5, self.clear_loading, (ui,))
         
     def gen_map(self, ui):
         self.persistent_objects = []
@@ -134,7 +134,7 @@ class GameObject:
         ui.camera = GameCamera(0, ui.max_camera_height/2, ui.max_camera_width, ui.max_camera_height)
         self.players = self.create_players(self.max_players)
         self.active_player = self.players[0]
-        self.event_queue.add_event(self.clear_loading(ui), 5)
+        self.event_queue.add_event(5, self.clear_loading, (ui,))
     
     def unload_map(self, ui):
         self.game_map = None
@@ -210,20 +210,29 @@ class EventQueue:
         self.queue = []
         self.delay = 0
         
-    def add_event(self, delay, event, *args):
+    def add_event(self, delay, event, args = ()):
         self.queue.append([event, args])
         self.add_delay(delay)
         
     def execute_event(self):
         if self.queue != []:
             function, args = self.queue[0]
-            function(args)
+            if args != ():
+                function(*args)
+            elif function != None:
+                function()
             self.queue.pop(0)
+        else:
+            pass
         
     def execute_all(self):
         if self.queue != False:
-            for func, args in self.queue:
-                function(args)
+            for function, args in self.queue:
+                if args != ():
+                    function(args)
+                else:
+                    function()
+            self.queue = []
                 
     def add_delay(self, i):
         self.delay = i

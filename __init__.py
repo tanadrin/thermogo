@@ -152,17 +152,17 @@ class GameController:
     def begin_load(self, ui, delay):
         self.game_ui.loading = True
         self.game_object.loading = True
-        self.game_object.event_queue.add_event(delay, self.game_object.load_map, ui)
+        self.game_object.event_queue.add_event(delay, self.game_object.load_map, (ui,))
         
     def begin_save(self, ui, delay):
         self.game_ui.loading = True
         self.game_object.loading = True
-        self.game_object.event_queue.add_event(delay, self.game_object.save_map, ui)
+        self.game_object.event_queue.add_event(delay, self.game_object.save_map, (ui,))
         
     def begin_gen(self, ui, delay):
         self.game_ui.loading = True
         self.game_object.loading = True
-        self.game_object.event_queue.add_event(delay, self.game_object.gen_map, ui)
+        self.game_object.event_queue.add_event(delay, self.game_object.gen_map, (ui,))
         print 'start gen'
     
                 
