@@ -37,7 +37,7 @@ class GameController:
     # Maximum game FPS; 1 frame is the basic unit of in-game time
     LIMIT_FPS = 20
     # Minimum frame intervals between certain GUI events
-    MAX_GUI_WAIT = 300
+    MAX_GUI_WAIT = 3
     # Minimum frame interval for certain background processes, like cleaning up dead objects
     MAX_BACKGROUND_WAIT = 20
     # Maximum number of players in a hotseat multiplayer game
@@ -144,21 +144,25 @@ class GameController:
         if self.gui_wait <= 0:
             self.gui_wait = self.MAX_GUI_WAIT
             self.game_ui.camera.move(x , y, self.game_object.game_map.world_height)
+            print 'camera moved'
+        else:
+            print 'camera not moved'
+            print self.gui_wait
             
     def begin_load(self, ui, delay):
         self.game_ui.loading = True
         self.game_object.loading = True
-        self.game_object.event_queue.add_event(self.game_object.load_map(ui), delay)
+        self.game_object.event_queue.add_event(delay, self.game_object.load_map, ui)
         
     def begin_save(self, ui, delay):
         self.game_ui.loading = True
         self.game_object.loading = True
-        self.game_object.event_queue.add_event(self.game_object.save_map(ui), delay)
+        self.game_object.event_queue.add_event(delay, self.game_object.save_map, ui)
         
     def begin_gen(self, ui, delay):
         self.game_ui.loading = True
         self.game_object.loading = True
-        self.game_object.event_queue.add_event(self.game_object.gen_map(ui), delay)
+        self.game_object.event_queue.add_event(delay, self.game_object.gen_map, ui)
         print 'start gen'
     
                 

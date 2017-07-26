@@ -10,9 +10,6 @@ class Infobar:
         2 : 'Cursor elevation: ',
         3 : 's: save terrain; d: load terrain; g: gen terrain; k: hide infobar'
     }
-        
-    LOADING_TEXT = '***LOADING***'
-    PAUSED_TEXT = '***PAUSED***'
 
     def __init__(self, width, height):
         self.show = False
@@ -134,6 +131,9 @@ class GameView:
             _, cursor.y = self.camera_to_cartesian(0, camera.height-1)
             
 class GameUI:
+        
+    LOADING_TEXT = '***LOADING***'
+    PAUSED_TEXT = '***PAUSED***'
     
     def __init__(self, screen_width, screen_height, menu_width, infobar_height, margin_width = 1, game_font = 'assets/arial10x10.png'):
         self.screen_width = screen_width
@@ -211,7 +211,7 @@ class GameUI:
                     console, 
                     15+x, 
                     0, 
-                    self.LOADING[x], 
+                    self.LOADING_TEXT[x], 
                     libtcod.BKGND_NONE
                 )
                 libtcod.console_set_char_foreground(

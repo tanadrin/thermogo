@@ -210,24 +210,27 @@ class EventQueue:
         self.queue = []
         self.delay = 0
         
-    def add_event(self, event, delay):
-        self.queue.append(event)
+    def add_event(self, delay, event, *args):
+        self.queue.append([event, args])
         self.add_delay(delay)
         
     def execute_event(self):
-        if self.queue != False:
-            self.queue[0]()
+        if self.queue != []:
+            function, args = self.queue[0]
+            function(args)
             self.queue.pop(0)
         
     def execute_all(self):
         if self.queue != False:
-            for i in self.queue:
-                self.queue[i]()
-                self.queue = []
+            for func, args in self.queue:
+                function(args)
                 
     def add_delay(self, i):
-        self.delay += i
+        self.delay = i
         
     def tick(self):
-        self.delay -= 1
+        if self.delay == 0:
+            self.execute_event()
+        elif self.delay > 0:
+            self.delay -= 1
         
