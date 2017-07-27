@@ -100,7 +100,7 @@ class GameObject:
         else:
             savefile['persistent_objects'] = None
         savefile.close()
-        self.event_queue.add_event(5, self.clear_loading, (ui,))
+        self.event_queue.add_event(0, self.clear_loading, (ui,))
                 
     def load_map(self, ui, map='map_name'):
         '''
@@ -124,7 +124,7 @@ class GameObject:
             ui.cursor = Cursor(0,0)
             self.interface_objects.append(ui.cursor)
         loadfile.close()
-        self.event_queue.add_event(5, self.clear_loading, (ui,))
+        self.event_queue.add_event(0, self.clear_loading, (ui,))
         
     def gen_map(self, ui):
         self.persistent_objects = []
@@ -134,7 +134,7 @@ class GameObject:
         ui.camera = GameCamera(0, ui.max_camera_height/2, ui.max_camera_width, ui.max_camera_height)
         self.players = self.create_players(self.max_players)
         self.active_player = self.players[0]
-        self.event_queue.add_event(5, self.clear_loading, (ui,))
+        self.event_queue.add_event(0, self.clear_loading, (ui,))
     
     def unload_map(self, ui):
         self.game_map = None
@@ -202,7 +202,6 @@ class GameObject:
     def clear_loading(self, ui):
         self.loading = False
         ui.loading = False
-        print 'end gen'
 
 # For handling function calls that don't need to be immediately executed
 class EventQueue:

@@ -1,5 +1,6 @@
 import libtcodpy as libtcod
 
+BLACK = libtcod.Color(0,0,0)
 WHITE = libtcod.Color(255,255,255)
 YELLOW = libtcod.Color(255,255,0)
 RED = libtcod.Color(255,0,0)
@@ -16,3 +17,8 @@ C_MIDLOW_ELEVATION = libtcod.Color(82,162,71)
 C_LOW_ELEVATION = libtcod.Color(49,162,67)
 C_SEA_ELEVATION = libtcod.Color(50,50,220)
 C_DEEPSEA_ELEVATION = libtcod.Color(0,0,150)
+    
+MENU_BACKGROUND_COLOR = BLACK
+MENU_TEXT_COLOR_1 = WHITE
+MENU_TEXT_COLOR_2 = RED
+MENU_HIGHLIGHT_COLOR = TEAL

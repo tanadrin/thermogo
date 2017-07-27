@@ -1,66 +1,6 @@
 import libtcodpy as libtcod
 from colors import *
-
-class Infobar:
-
-    # Text to display in the infobar, by line number
-    TEXT = {
-        0 : 'Cursor cartesian: ',
-        1 : 'Cursor coordinates: ',
-        2 : 'Cursor elevation: ',
-        3 : 's: save terrain; d: load terrain; g: gen terrain; k: hide infobar'
-    }
-
-    def __init__(self, width, height):
-        self.show = False
-        self.width = width
-        self.height = height
-        self.console = libtcod.console_new(width, height)
-        self.text = []
-        for i in range(0, self.height):
-            self.text.append("")
-                
-        self.cursor_cartesian = ''
-        self.cursor_coordinates = ''
-        self.cursor_elevation = ''
-
-    def refresh(self):
-        self.update_infobar_text()
-        libtcod.console_clear(self.console)
-        for i in range(0, len(self.text)):
-            libtcod.console_print(self.console, 0, i, self.text[i])
-        
-    def update_infobar_data(self, cursor):
-        if cursor != None:
-            self.cursor_cartesian = str(cursor.xm)+' ,'+str(cursor.ym)
-            self.cursor_coordinates = str(cursor.la)+' ,'+str(cursor.lo)
-            if cursor.elevation > 0:
-                self.cursor_elevation = str(cursor.elevation*4000)+'m'
-            else:
-                self.cursor_elevation = "Sea level"
-        else:
-            pass
-        
-    def update_infobar_text(self):
-        for line, text in self.TEXT.items():
-            if line == 0:
-                self.text[line] = self.TEXT[line]+self.cursor_cartesian
-            elif line == 1:
-                self.text[line] = self.TEXT[line]+self.cursor_coordinates
-            elif line == 2:
-                self.text[line] = self.TEXT[line]+self.cursor_elevation
-            else:
-                self.text[line] = self.TEXT[line]
-        
-class Menu:
-    def __init__(self, width, height):
-        self.show = False
-        self.height = height
-        self.width = width
-        self.console = libtcod.console_new(width, height)
-        
-    def refresh(self):
-        libtcod.console_clear(self.console)
+from menus import *
         
 class GameView:
     def __init__(self, width, height):
@@ -124,23 +64,25 @@ class GameView:
         if x < 0:
             cursor.x, _ = self.camera_to_cartesian(0, 0, camera)
         if x > camera.width-1:
-            cursor.x, _ = self.camera_to_cartesian(camera.width-1, 0)
+            cursor.x, _ = self.camera_to_cartesian(camera.width-1, 0, camera)
         if y < 0:
             _, cursor.y = self.camera_to_cartesian(0, 0, camera)
         if y > camera.height-1:
-            _, cursor.y = self.camera_to_cartesian(0, camera.height-1)
+            _, cursor.y = self.camera_to_cartesian(0, camera.height-1, camera)
             
 class GameUI:
         
     LOADING_TEXT = '***LOADING***'
     PAUSED_TEXT = '***PAUSED***'
     
-    def __init__(self, screen_width, screen_height, menu_width, infobar_height, margin_width = 1, game_font = 'assets/arial10x10.png'):
+    def __init__(self, screen_width, screen_height, sidemenu_width, infobar_height, margin_width = 1, game_font = 'assets/arial10x10.png'):
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.margin_width = margin_width
         self.max_camera_width = self.screen_width-2*self.margin_width
         self.max_camera_height = self.screen_height-2*self.margin_width
+        self.infobar_height = infobar_height
+        self.sidemenu_width = sidemenu_width
         
         self.paused = False
         self.loading = False
@@ -150,15 +92,32 @@ class GameUI:
         # Main console
         libtcod.console_set_custom_font(game_font, libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_TCOD)
         libtcod.console_init_root(self.screen_width, self.screen_height, 'Thermonuclear Go', False)
-        self.main_console = libtcod.console_new(self.screen_width, self.screen_height)
         # Libtcod consoles for GUI
-        self.game_view = GameView(self.max_camera_width, self.max_camera_height)
-        self.infobar = Infobar(self.max_camera_width, infobar_height)
-        self.menu = Menu(menu_width, self.max_camera_height)
-        self.gui_background = libtcod.console_new(self.screen_width, self.screen_height)
+        self.current_menu = MainMenu(screen_width, screen_height)
         
-    def refresh_all(self, gamemap, camera, objects, cursor):
-        self.render_all(gamemap, camera, objects, cursor)
+    def create_main_menu(self):
+        self.current_menu = MainMenu(self.screen_width, self.screen_height)
+        
+    def show_credits(self):
+        self.current_menu = Credits(self.screen_width, self.screen_height)
+        
+    def setup_ingame_ui(self):
+        self.game_view = GameView(self.max_camera_width, self.max_camera_height)
+        self.infobar = Infobar(self.max_camera_width, self.infobar_height)
+        self.sidemenu = SideMenu(self.sidemenu_width, self.max_camera_height)
+        self.gui_background = libtcod.console_new(self.screen_width, self.screen_height)
+        self.current_menu = None
+        
+    def refresh_all(self, game_object, game_ui):
+        if game_object != None:
+            self.render_all(
+                game_object.game_map, 
+                game_ui.camera, 
+                game_object.persistent_objects + game_object.interface_objects, 
+                game_ui.cursor
+            )
+        else:
+            self.render_current_menu()
         libtcod.console_flush()
         
     # While the game is running, render a solid background to use as border between other GUI elements
@@ -225,20 +184,24 @@ class GameUI:
         libtcod.console_clear(self.gui_background)
         self.refresh_gui_background(self.gui_background)
         libtcod.console_blit(self.gui_background, 0, 0, self.screen_width, self.screen_height, 0, 0, 0)
+        
+    def render_current_menu(self):
+        # If a main menu is active, blit its contents to the root console
+        if self.current_menu != None:
+            self.current_menu.refresh()
+            libtcod.console_blit(
+                self.current_menu.console,
+                0,
+                0,
+                self.screen_width,
+                self.screen_height,
+                0,
+                0,
+                0
+            )
 
     # Rendering the main view and GUI elements
     def render_all(self, gamemap = None, camera = None, objects = None, cursor = None):
-        # blit the contents of 'con' to the root console
-        libtcod.console_blit(
-            self.main_console, 
-            0, 
-            0, 
-            self.screen_width, 
-            self.screen_height, 
-            0, 
-            0, 
-            0
-        )
         # blit the contents of the GUI background to the root console
         self.refresh_gui_background(self.gui_background)
         libtcod.console_blit(
@@ -265,8 +228,8 @@ class GameUI:
                 camera.width, 
                 camera.height, 
                 0, 
-                1, 
-                1
+                self.margin_width, 
+                self.margin_width
             )
             
         # likewise for the infobar, if we're showing it
@@ -284,23 +247,23 @@ class GameUI:
             )
             
         # if we're showing the right-side menu, it as well
-        if self.menu.show == True and gamemap != None and camera != None:
-            self.menu.refresh()
+        if self.sidemenu.show == True and gamemap != None and camera != None:
+            self.sidemenu.refresh()
             libtcod.console_blit(
-                self.menu.console, 
+                self.sidemenu.console, 
                 0, 
                 0, 
-                self.menu.width - self.margin_width, 
+                self.sidemenu.width - self.margin_width, 
                 self.screen_height - self.margin_width*2, 
                 0, 
-                self.screen_width - self.menu.width, 
+                self.screen_width - self.sidemenu.width, 
                 1
             )
             
     def toggle_menu(self, camera):
-        self.menu.show = not self.menu.show
-        if self.menu.show:
-            camera.width = self.max_camera_width - self.menu.width
+        self.sidemenu.show = not self.sidemenu.show
+        if self.sidemenu.show:
+            camera.width = self.max_camera_width - self.sidemenu.width
         else:
             camera.width = self.max_camera_width
     
