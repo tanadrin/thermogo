@@ -4,7 +4,7 @@ from colors import *
 from sphere import *
 
 # A latitude-longitude grid with height data
-class GameMap:
+class GameMap(object):
 
     # Radius in km; determines distances on the surface
     WORLD_RADIUS = 5000
@@ -21,8 +21,34 @@ class GameMap:
                 row.append(GridCoordinate(x, y, self.world_width, self.world_height, self.world_noise))
             self.grid.append(row)
         libtcod.noise_delete(self.world_noise)
-
-class GridCoordinate:
+        for x in xrange(self.world_width):
+            for y in xrange(self.world_height):
+                self.grid[x][y].neighbors = get_neighbors(self, x, y)
+        
+        # Pathfinding graph for all land tiles; remove sea tiles and delete
+        # neighbor, cost entry in the neighbors list
+        self.land_graph = self.grid
+        for x in xrange(self.world_width):
+            for y in xrange(self.world_height):
+                cell = self.land_graph[x][y]
+                if cell.elevation >= 0:
+                    cell.neighbors = []
+                for entry in cell.neighbors:
+                    if entry[0].elevation >= 0:
+                        cell.neighbors.remove(entry)
+        
+        # Pathfinding graph for all sea tiles
+        self.sea_graph = self.grid
+        for x in xrange(self.world_width):
+            for y in xrange(self.world_height):
+                cell = self.sea_graph[x][y]
+                if cell.elevation > 0:
+                    cell.neighbors = []
+                for entry in cell.neighbors:
+                    if entry[0].elevation > 0:
+                        cell.neighbors.remove(entry)
+            
+class GridCoordinate(object):
 
     # Elevation parameters, can be freely altered. Max elevation will affect
     # what appears as mountains; min elevation what appears as deep sea.
@@ -73,6 +99,7 @@ class GridCoordinate:
         self.lo = ((Decimal(self.x)*360)/Decimal(world_width))-180
         self.char = '# '
         self.color = WHITE
+        self.neighbors = []
         
         # Sampling 3d noise to get the shape of the landmasses
         x, y, z = spherical_to_cartesian(self.la, self.lo, self.LANDMASS_SIZE)
@@ -88,5 +115,6 @@ class GridCoordinate:
                 self.color = elev_info['color']
                 self.char = elev_info['char']
     
-
+    def get_neighbors(self):
+        return neighbors
 

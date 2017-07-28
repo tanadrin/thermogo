@@ -3,7 +3,7 @@
 import libtcodpy as libtcod
 from colors import *
 
-class Cursor():
+class Cursor(object):
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -40,7 +40,7 @@ class Cursor():
             self.char = 'X'
             self.wait = 5
 
-class GameCamera:
+class GameCamera(object):
     '''
     Used to keep track of what to render onscreen, and to differentiate the 
     position of the camera from the position of the player, in case we want 
@@ -54,7 +54,7 @@ class GameCamera:
     def move(self, dx, dy, world_height):
         '''
         Allows endless horizontal camera pan (because the camera wraps 
-        around horizontally), but limited vertical pan (since there'seek
+        around horizontally), but limited vertical pan (since there's
         no vertical wraparound).
         '''
         if dy == 0:

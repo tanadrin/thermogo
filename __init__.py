@@ -1,13 +1,6 @@
 '''
 TO-DO LIST:
-    1. Refactor code so that on startup:
-        a. a splash screen appears with the Chicken Movers logo (item deleted)
-        b. a main menu appears with singleplayer, multiplayer, and config options (done)
-        c. plus exit and credits (done)
-        d. you can enter SP, MP, or any of those submenus and return to the main menu (done sorta)
-    2. Sever-client architecture for the singleplayer game, with separate interfaces for each player
-    3. A multiplayer mode that starts a server and connects to it, and listens for other connections
-    4. Plus a multiplayer mode that just hsots the server (and can be started from the command line)
+    
 '''
 import random
 import shelve
@@ -28,8 +21,9 @@ from colors import *
 from player import *
 from logic import *
 import socket
+import PodSixNet
 
-class GameController:
+class GameController(object):
     # GUI and map variables
     SCREEN_WIDTH = 182
     SCREEN_HEIGHT = SCREEN_WIDTH/2+1

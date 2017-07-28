@@ -1,3 +1,4 @@
 map/
 *.pyc
 *.egg-info
+rules.txt

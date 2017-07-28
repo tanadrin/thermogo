@@ -64,7 +64,7 @@ class GameObject:
                 self.persistent_objects.remove(object)
         for object in self.active_player.owned_objects:
             if object.char == " " and object.name == "DEAD":
-                self.persistent_objects.remove(object)
+                self.active_player.owned_objects.remove(object)
                 
     
         
@@ -186,7 +186,7 @@ class GameObject:
 
     # Force spawn a base for debugging purposes
     def force_spawn(self, cursor):
-        base = Base(cursor.x, cursor.y, self.persistent_objects, self.active_player)
+        army = Army(cursor.x, cursor.y, self.persistent_objects, self.active_player)
     
     # Kill all objects for debugging purposes
     def force_kill(self):

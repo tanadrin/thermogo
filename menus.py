@@ -1,8 +1,17 @@
 import libtcodpy as libtcod
 from colors import *
 
+class Menu(object):
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.console = libtcod.console_new(width, height)
+        
+    def refresh(self):
+        libtcod.console_clear(self.console)
+    
 # Main menu that displays on game startup, and when quitting games (but not exiting)
-class MainMenu:
+class MainMenu(Menu):
 
     # Text to display in the menu, by line number
     BANNER_TEXT = 'Thermonuclear Go'
@@ -26,9 +35,7 @@ class MainMenu:
     }
 
     def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.console = libtcod.console_new(width, height)
+        super(MainMenu, self).__init__(width, height)
         libtcod.console_set_default_background(self.console, MENU_BACKGROUND_COLOR)
         libtcod.console_set_default_foreground(self.console, MENU_TEXT_COLOR_1)
         self.text = []
@@ -37,7 +44,7 @@ class MainMenu:
         self.current_option = 0
         
     def refresh(self):
-        libtcod.console_clear(self.console)
+        super(MainMenu, self).refresh()
         libtcod.console_print(
             self.console,
             self.width/2 - len(self.BANNER_TEXT)/2, 
@@ -84,7 +91,7 @@ class MainMenu:
             return self.HOTKEYS.get(5)
 
 # Non-interacting menu; replaces main menu when active 
-class Credits:    
+class Credits(Menu):    
     # Text to display in the menu, by line number
     BANNER_TEXT = 'Credits:'
     TEXT = {
@@ -98,9 +105,7 @@ class Credits:
     }
     
     def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.console = libtcod.console_new(width, height)
+        super(Credits, self).__init__(width, height)
         libtcod.console_set_default_background(self.console, MENU_BACKGROUND_COLOR)
         libtcod.console_set_default_foreground(self.console, MENU_TEXT_COLOR_1)
         self.text = []
@@ -108,7 +113,7 @@ class Credits:
             self.text.append(self.TEXT.get(i))
         
     def refresh(self):
-        libtcod.console_clear(self.console)
+        super(Credits, self).refresh()
         libtcod.console_print(
             self.console,
             self.width/2 - len(self.BANNER_TEXT)/2, 
@@ -136,7 +141,7 @@ class Credits:
         pass
 
 #In-game panel across bottom of the screen
-class Infobar:
+class Infobar(Menu):
 
     # Text to display in the infobar, by line number
     TEXT = {
@@ -147,10 +152,8 @@ class Infobar:
     }
 
     def __init__(self, width, height):
+        super(Infobar, self).__init__(width, height)
         self.show = False
-        self.width = width
-        self.height = height
-        self.console = libtcod.console_new(width, height)
         self.text = []
         for i in range(0, self.height):
             self.text.append("")
@@ -160,8 +163,8 @@ class Infobar:
         self.cursor_elevation = ''
 
     def refresh(self):
+        super(Infobar, self).refresh()
         self.update_infobar_text()
-        libtcod.console_clear(self.console)
         for i in range(0, len(self.text)):
             libtcod.console_print(self.console, 0, i, self.text[i])
         
@@ -188,12 +191,10 @@ class Infobar:
                 self.text[line] = self.TEXT[line]
 
 #In-game panel on right side of screen                
-class SideMenu:
+class SideMenu(Menu):
     def __init__(self, width, height):
+        super(SideMenu, self).__init__(width, height)
         self.show = False
-        self.height = height
-        self.width = width
-        self.console = libtcod.console_new(width, height)
         
     def refresh(self):
-        libtcod.console_clear(self.console)
+        super(SideMenu, self).refresh()
