@@ -75,7 +75,7 @@ class GameUI:
     LOADING_TEXT = '***LOADING***'
     PAUSED_TEXT = '***PAUSED***'
     
-    def __init__(self, screen_width, screen_height, sidemenu_width, infobar_height, margin_width = 1, game_font = 'assets/arial10x10.png'):
+    def __init__(self, screen_width, screen_height, sidemenu_width, infobar_height, game_object, margin_width = 1, game_font = 'assets/arial10x10.png'):
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.margin_width = margin_width
@@ -83,6 +83,7 @@ class GameUI:
         self.max_camera_height = self.screen_height-2*self.margin_width
         self.infobar_height = infobar_height
         self.sidemenu_width = sidemenu_width
+        self.game_object = game_object
         
         self.paused = False
         self.loading = False
@@ -248,6 +249,8 @@ class GameUI:
             
         # if we're showing the right-side menu, it as well
         if self.sidemenu.show == True and gamemap != None and camera != None:
+            self.sidemenu.update_sidemenu_data(self.cursor, self.game_object.active_player)
+            print self.game_object.game_map.grid[self.cursor.x][self.cursor.y].la, self.game_object.game_map.grid[self.cursor.x][self.cursor.y].lo
             self.sidemenu.refresh()
             libtcod.console_blit(
                 self.sidemenu.console, 

@@ -32,10 +32,11 @@ class GameMap(object):
             for y in xrange(self.world_height):
                 cell = self.land_graph[x][y]
                 if cell.elevation >= 0:
-                    cell.neighbors = []
-                for entry in cell.neighbors:
-                    if entry[0].elevation >= 0:
-                        cell.neighbors.remove(entry)
+                    cell.neighbors = {}
+                for key in cell.neighbors.copy():
+                    if key.elevation >= 0:
+                        if key in cell.neighbors:
+                            del cell.neighbors[key]
         
         # Pathfinding graph for all sea tiles
         self.sea_graph = self.grid
@@ -43,10 +44,17 @@ class GameMap(object):
             for y in xrange(self.world_height):
                 cell = self.sea_graph[x][y]
                 if cell.elevation > 0:
-                    cell.neighbors = []
-                for entry in cell.neighbors:
-                    if entry[0].elevation > 0:
-                        cell.neighbors.remove(entry)
+                    cell.neighbors = {}
+                for key in cell.neighbors.copy():
+                    if key.elevation > 0:
+                        if key in cell.neighbors:
+                            del cell.neighbors[key]
+                        
+    def get_cost(self, graph, current_node, next_node):
+        '''
+        Gets the cost to move from the current node to a given neighbor node
+        '''
+        return graph[current.x][current.y].neighbors[next_node]
             
 class GridCoordinate(object):
 
@@ -97,9 +105,9 @@ class GridCoordinate(object):
         self.y = y
         self.la = ((Decimal(self.y)*180)/Decimal(world_height))-90
         self.lo = ((Decimal(self.x)*360)/Decimal(world_width))-180
-        self.char = '# '
+        self.char = '#'
         self.color = WHITE
-        self.neighbors = []
+        self.neighbors = {} 
         
         # Sampling 3d noise to get the shape of the landmasses
         x, y, z = spherical_to_cartesian(self.la, self.lo, self.LANDMASS_SIZE)

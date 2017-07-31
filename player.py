@@ -1,6 +1,7 @@
 from colors import *
 
 class Player:
+    MAX_POWER_PROJECTION = 20
     def __init__(self, number, color, name):
         self.number = number
         self.color = color

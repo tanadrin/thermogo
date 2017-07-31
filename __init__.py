@@ -57,8 +57,9 @@ class GameController(object):
             self.SCREEN_HEIGHT, 
             self.SIDEMENU_WIDTH, 
             self.INFOBAR_HEIGHT, 
+            self.game_object,
             self.MARGIN_WIDTH, 
-            self.GAME_FONT
+            self.GAME_FONT,
         )
         
         self.max_camera_width = self.SCREEN_WIDTH-2*self.MARGIN_WIDTH
@@ -176,8 +177,7 @@ class GameController(object):
         if self.game_object != None and self.game_ui.cursor != None:
             self.game_ui.cursor.move(x, y)
             self.game_ui.game_view.lock_cursor_to_view(self.game_ui.camera, self.game_ui.cursor)
-            self.game_object.update_cursor_cartesian(self.game_ui.cursor)
-            self.game_object.update_cursor_coordinates(self.game_ui.cursor)
+            self.game_object.update_cursor_data(self.game_ui.cursor)
         elif self.game_ui.current_menu != None:
             self.game_ui.current_menu.scroll(y)
                 

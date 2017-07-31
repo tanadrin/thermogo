@@ -9,8 +9,9 @@ class Unit(object):
     MOVE_CHAR = '@'
     HOLD_CHAR = '@'
     DEFAULT_CHAR = '@'
-    def __init__(self, x, y, player = no_player):
+    def __init__(self, x, y, objects, player = no_player):
         objects.append(self)
+        player.owned_objects.append(self)
         self.x = x
         self.y = y
         self.char = self.DEFAULT_CHAR
@@ -69,7 +70,6 @@ class Base(Unit):
     DEFAULT_CHAR = '#'
     def __init__(self, x, y, objects, player = no_player):
         super(Army, self).__init__(x, y, objects, player)
-        player.owned_objects.append(self)
         self.supply_cost = -1
         
 class ResourceNode(Unit):

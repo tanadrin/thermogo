@@ -192,9 +192,59 @@ class Infobar(Menu):
 
 #In-game panel on right side of screen                
 class SideMenu(Menu):
+
+    # Text to display in the sidemenu, by line number
+    TEXT = {
+        0 : 'Power Projection:',
+        1 : 'Total supplies: ',
+        2 : 'Owned bases: ',
+        3 : 'Owned armies: ',
+        4 : 'Owned fleets: ',
+        5 : '////////////////////',
+        6 : '', # Lat and long
+        7 : '', # Elevation
+        8 : '', # Territory owner
+        9 : '////////////////////'
+    }
     def __init__(self, width, height):
         super(SideMenu, self).__init__(width, height)
         self.show = False
+        self.text = []
+        for i in range(0, self.height):
+            self.text.append("")
+                
+        self.cursor_coordinates = ''
+        self.cursor_elevation = ''
+        
+        self.power_projection = '0'
         
     def refresh(self):
         super(SideMenu, self).refresh()
+        self.update_sidemenu_text()
+        for i in range(0, len(self.text)):
+            libtcod.console_print(self.console, 0, i, self.text[i])
+        
+    def update_sidemenu_data(self, cursor, active_player):
+        if active_player.power_projection < 10:
+            self.power_projection = ' '+str(active_player.power_projection)
+        else:
+            self.power_projection = str(active_player.power_projection)
+        if cursor != None:
+            self.cursor_coordinates = str(cursor.la)+' ,'+str(cursor.lo)
+            if cursor.elevation > 0:
+                self.cursor_elevation = str(cursor.elevation*4000)+'m'
+            elif cursor.elevation <= 0:
+                self.cursor_elevation = "Sea level"
+        else:
+            pass
+            
+    def update_sidemenu_text(self):
+        for line, text in self.TEXT.items():
+            if line == 0:
+                self.text[line] = self.TEXT[line]+self.power_projection
+            elif line == 6:
+                self.text[line] = self.TEXT[line]+self.cursor_coordinates
+            elif line == 7:
+                self.text[line] = self.TEXT[line]+self.cursor_elevation
+            else:
+                self.text[line] = self.TEXT[line]

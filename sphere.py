@@ -25,26 +25,26 @@ def get_neighbors(gamemap, x, y):
     world_width = gamemap.world_width-1
     world_height = gamemap.world_height-1
     grid = gamemap.grid
-    neighbors = []
+    neighbors = {}
     
     # For x cells not at the edges, x neighbors are directly left and right
     if world_width > x > 0:
-        neighbors.append([grid[x+1][y],1])
-        neighbors.append([grid[x-1][y],1])
+        neighbors[grid[x+1][y]] = 1
+        neighbors[grid[x-1][y]] = 1
         
     # On the sides, add the cells on the opposite edge as neighbors
     if x == 0:
-        neighbors.append([grid[x+1][y],    1])
-        neighbors.append([grid[world_width][y],1])
+        neighbors[grid[x+1][y]]         = 1
+        neighbors[grid[world_width][y]] = 1
         
     if x == world_width:
-        neighbors.append([grid[0][y],  1])
-        neighbors.append([grid[x-1][y],1])
+        neighbors[grid[0][y]]   = 1
+        neighbors[grid[x-1][y]] = 1
         
     # Now we do the same with the y coordinate
     if world_height > y > 0:
-        neighbors.append([grid[x][y+1],1])
-        neighbors.append([grid[x][y-1],1])
+        neighbors[grid[x][y+1]] = 1
+        neighbors[grid[x][y-1]] = 1
         
     # Except rather than wrapping around at the poles (which would create)
     # a torus), the neighbor above or below the top or bottom edge
@@ -53,52 +53,51 @@ def get_neighbors(gamemap, x, y):
     # total world width--i.e., halfway around, like the prime meridian and
     # the international date line.
     if y == 0:
-        neighbors.append([grid[(x+world_width/2)%world_width][y],1])
-        neighbors.append([grid[x][y+1],              1])
+        neighbors[grid[(x+world_width/2)%world_width][y]] = 1
+        neighbors[grid[x][y+1]] = 1
         
     if y == world_height:
-        neighbors.append([grid[x][y-1],              1])
-        neighbors.append([grid[(x+world_width/2)%world_width][y],1])
+        neighbors[grid[x][y-1]]                           = 1
+        neighbors[grid[(x+world_width/2)%world_width][y]] = 1
         
     # The same principles hold for the diagonals away from the margins...
     if world_width > x > 0 and world_height > y > 0:
-        neighbors.append([grid[x+1][y+1],1.41])
-        neighbors.append([grid[x-1][y-1],1.41])
-        neighbors.append([grid[x-1][y+1],1.41])
-        neighbors.append([grid[x+1][y-1],1.41])
+        neighbors[grid[x+1][y+1]] = 1.41
+        neighbors[grid[x-1][y-1]] = 1.41
+        neighbors[grid[x-1][y+1]] = 1.41
+        neighbors[grid[x+1][y-1]] = 1.41
         
     #...and each corner case is different. Starting with (0,0)
     elif x == 0 and y == 0:
-        neighbors.append([grid[x+1][y+1],1.41])
-        neighbors.append([grid[(x+world_width/2)%world_width-1][y],1.41])
-        neighbors.append([grid[world_width][y+1],1.41])
-        neighbors.append([grid[(x+world_width/2)%world_width+1][y],1.41])
+        neighbors[grid[x+1][y+1]]                           = 1.41
+        neighbors[grid[(x+world_width/2)%world_width-1][y]] = 1.41
+        neighbors[grid[world_width][y+1]]                   = 1.41
+        neighbors[grid[(x+world_width/2)%world_width+1][y]] = 1.41
     # (world_width, world_height)
     elif x == world_width and y == world_height:
-        neighbors.append([grid[(x+world_width/2)%world_width+1][y],1.41])
-        neighbors.append([grid[x-1][y-1],1.41])
-        neighbors.append([grid[(x+world_width/2)%world_width-1][y],1.41])
-        neighbors.append([grid[world_width][y-1],1.41])
+        neighbors[grid[(x+world_width/2)%world_width+1][y]] = 1.41
+        neighbors[grid[x-1][y-1]]                           = 1.41
+        neighbors[grid[(x+world_width/2)%world_width-1][y]] = 1.41
+        neighbors[grid[world_width][y-1]]                   = 1.41
     # (0, world_height)
     elif x == world_width and y == 0:
-        neighbors.append([grid[0][y+1],1.41])
-        neighbors.append([grid[(x+world_width/2)%world_width-1][y],1.41])
-        neighbors.append([grid[x-1][y+1],1.41])
-        neighbors.append([grid[(x+world_width/2)%world_width+1][y],1.41])
+        neighbors[grid[0][y+1]]                             = 1.41
+        neighbors[grid[(x+world_width/2)%world_width-1][y]] = 1.41
+        neighbors[grid[x-1][y+1]]                           = 1.41
+        neighbors[grid[(x+world_width/2)%world_width+1][y]] = 1.41
     # (world_width, 0)
     elif x == 0 and y == world_height:
-        neighbors.append([grid[(x+world_width/2)%world_width+1][y],1.41])
-        neighbors.append([grid[x-1][y-1],1.41])
-        neighbors.append([grid[(x+world_width/2)%world_width+1][y],1.41])
-        neighbors.append([grid[x+1][y-1],1.41])
+        neighbors[grid[(x+world_width/2)%world_width+1][y]] = 1.41
+        neighbors[grid[x-1][y-1]]                           = 1.41
+        neighbors[grid[(x+world_width/2)%world_width+1][y]] = 1.41
+        neighbors[grid[x+1][y-1]]                           = 1.41
         
     return neighbors
 
-def get_longitude_length(latitude, degrees_longitude, r = 1)
+def get_longitude_length(latitude, degrees_longitude, r = 1):
     # Assumes a radius of a sphere of 1; for a different radius, multiply the result
     # by the actual radius of the sphere
-    1 degree = pi/180 radians*r*cosine latitude
-    return (3.14/180)*math.cos(latitude)
+    return (3.14/180)*r*math.cos(latitude)
     
 # Haversine function (sine squared of an angle divided by two)
 def hav(theta):

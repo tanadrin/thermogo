@@ -21,7 +21,7 @@ import time
 
 
 # Game state and game logic, except input,
-class GameObject:
+class GameObject(object):
     
     def __init__(self, mapsize, max_players, cleanup_interval):
     
@@ -44,6 +44,9 @@ class GameObject:
         self.cleanup_interval = cleanup_interval
         self.cleanup_timer = cleanup_interval
         self.event_queue = EventQueue()
+        
+        # Used for tracking and updating UIs
+        self.game_uis = []
         
     def run_cleanup(self):
         '''
@@ -84,6 +87,15 @@ class GameObject:
         cursor.la = self.game_map.grid[cursor.x][cursor.y].la
         cursor.lo = self.game_map.grid[cursor.x][cursor.y].lo
         return cursor.la, cursor.lo
+        
+    def update_cursor_elevation(self, cursor):
+        cursor.elevation = self.game_map.grid[cursor.x][cursor.y].elevation
+        return cursor.elevation
+        
+    def update_cursor_data(self, cursor):
+        self.update_cursor_cartesian(cursor)
+        self.update_cursor_coordinates(cursor)
+        self.update_cursor_elevation(cursor)
             
     def save_map(self, ui):
         '''
@@ -125,6 +137,9 @@ class GameObject:
             self.interface_objects.append(ui.cursor)
         loadfile.close()
         self.event_queue.add_event(0, self.clear_loading, (ui,))
+        self.game_uis.append(ui)
+        for ui in self.game_uis:
+            ui.game_object = self
         
     def gen_map(self, ui):
         self.persistent_objects = []
@@ -135,6 +150,9 @@ class GameObject:
         self.players = self.create_players(self.max_players)
         self.active_player = self.players[0]
         self.event_queue.add_event(0, self.clear_loading, (ui,))
+        self.game_uis.append(ui)
+        for ui in self.game_uis:
+            ui.game_object = self
     
     def unload_map(self, ui):
         self.game_map = None
@@ -144,6 +162,7 @@ class GameObject:
         self.players = []
         self.active_player = None
         self.persistent_objects = []
+        self.game_uis = None
         
     def create_players(self, number):
         players = []
@@ -174,6 +193,8 @@ class GameObject:
             self.active_player = self.players[self.active_player.number]
         else:
             self.active_player = self.players[0]
+        for player in self.players:
+            player.power_projection += 1
             
     def  cycle(self):
         '''
@@ -204,7 +225,7 @@ class GameObject:
         ui.loading = False
 
 # For handling function calls that don't need to be immediately executed
-class EventQueue:
+class EventQueue(object):
     def __init__(self):
         self.queue = []
         self.delay = 0
