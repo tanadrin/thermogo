@@ -16,12 +16,11 @@ from mapping import *
 from colors import *
 from player import *
 
-import time
-
-
-
-# Game state and game logic, except input,
 class GameObject(object):
+    '''
+    Main object for handling information about game objects and the current
+    state of the game.
+    '''
     
     def __init__(self, mapsize, max_players, cleanup_interval):
     
@@ -40,10 +39,11 @@ class GameObject(object):
         self.interface_objects = []
         self.persistent_objects = []
         
-        # Background cleanup
+        # Background and cleanup
         self.cleanup_interval = cleanup_interval
         self.cleanup_timer = cleanup_interval
         self.event_queue = EventQueue()
+        self.message_queue = MessageQueue()
         
         # Used for tracking and updating UIs
         self.game_uis = []
@@ -140,6 +140,7 @@ class GameObject(object):
         self.game_uis.append(ui)
         for ui in self.game_uis:
             ui.game_object = self
+            ui.infobar.message_queue = self.message_queue
         
     def gen_map(self, ui):
         self.persistent_objects = []
@@ -153,6 +154,7 @@ class GameObject(object):
         self.game_uis.append(ui)
         for ui in self.game_uis:
             ui.game_object = self
+            ui.infobar.message_queue = self.message_queue
     
     def unload_map(self, ui):
         self.game_map = None
@@ -224,8 +226,10 @@ class GameObject(object):
         self.loading = False
         ui.loading = False
 
-# For handling function calls that don't need to be immediately executed
 class EventQueue(object):
+    '''
+    Used to handle function calls that don't need to be immediately executed.
+    '''
     def __init__(self):
         self.queue = []
         self.delay = 0
@@ -263,3 +267,21 @@ class EventQueue(object):
         elif self.delay > 0:
             self.delay -= 1
         
+class MessageQueue(object):
+    '''
+    Messages are passed to the MessageQueue, which stores them and passes them
+    to the infobar to be displayed. Each message is stored with a color (default
+    is white) in which it is displayed.
+    '''
+    def __init__(self):
+        self.queue = []
+        
+    def add_message(self, text, color = WHITE):
+        self.queue.append((text, color))
+    
+    def retrieve_latest(self):
+        message = self.queue.pop(0)
+        return message
+        
+    def clear_queue(self):
+        self.queue = []

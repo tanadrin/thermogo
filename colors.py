@@ -1,5 +1,6 @@
 import libtcodpy as libtcod
 
+# Libtcod colors used in various places in thermogo
 BLACK = libtcod.Color(0,0,0)
 WHITE = libtcod.Color(255,255,255)
 YELLOW = libtcod.Color(255,255,0)

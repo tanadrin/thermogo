@@ -2,6 +2,9 @@ import libtcodpy as libtcod
 from colors import *
 
 class Menu(object):
+    '''
+    Basically just a wrapper for a couple libtcod console functions.
+    '''
     def __init__(self, width, height):
         self.width = width
         self.height = height
@@ -90,15 +93,18 @@ class MainMenu(Menu):
         elif char == 'c':
             return self.HOTKEYS.get(5)
 
-# Non-interacting menu; replaces main menu when active 
 class Credits(Menu):    
+    '''
+    Non-interacting menu; replaces main menu when active 
+    '''
+    
     # Text to display in the menu, by line number
     BANNER_TEXT = 'Credits:'
     TEXT = {
-        0 : 'Design & Programming by Tanadrin',
-        1 : 'Using the Doryen library',
+        0 : 'Design & programming by Tanadrin',
+        1 : 'using the Doryen library',
         2 : 'http://roguecentral.org/doryen/libtcod/',
-        3 : '',
+        3 : 'Thanks to Petronius & Kekrops for Python help',
         4 : '',
         5 : '',
         6 : 'Esc to quit, enter to return to main menu'
@@ -140,59 +146,60 @@ class Credits(Menu):
     def key_select(self, char_ord):
         pass
 
-#In-game panel across bottom of the screen
 class Infobar(Menu):
-
-    # Text to display in the infobar, by line number
-    TEXT = {
-        0 : 'Cursor cartesian: ',
-        1 : 'Cursor coordinates: ',
-        2 : 'Cursor elevation: ',
-        3 : 's: save terrain; d: load terrain; g: gen terrain; k: hide infobar'
-    }
-
+    '''
+    In-game panel displaying messages at the bottom of the screen
+    '''
+    
+    LINE_START = "> "
+    
     def __init__(self, width, height):
         super(Infobar, self).__init__(width, height)
+        
         self.show = False
-        self.text = []
-        for i in range(0, self.height):
-            self.text.append("")
-                
-        self.cursor_cartesian = ''
-        self.cursor_coordinates = ''
-        self.cursor_elevation = ''
+        
+        # Where to retrieve messages for display
+        self.message_queue = None
+        
+        # Where to store messages being displayed
+        self.messages = []
+        self.max_messages = self.height
+        for i in range(0, self.max_messages):
+            self.messages.append(["", WHITE])
 
     def refresh(self):
         super(Infobar, self).refresh()
-        self.update_infobar_text()
-        for i in range(0, len(self.text)):
-            libtcod.console_print(self.console, 0, i, self.text[i])
+        if self.message_queue != None:
+            self.update_infobar_text()
+            for i in range(0, len(self.messages)):
+                libtcod.console_set_default_foreground(self.console, self.messages[i][1])
+                libtcod.console_print(self.console, 0, i, self.LINE_START + self.messages[i][0])
         
-    def update_infobar_data(self, cursor):
-        if cursor != None:
-            self.cursor_cartesian = str(cursor.xm)+' ,'+str(cursor.ym)
-            self.cursor_coordinates = str(cursor.la)+' ,'+str(cursor.lo)
-            if cursor.elevation > 0:
-                self.cursor_elevation = str(cursor.elevation*4000)+'m'
-            else:
-                self.cursor_elevation = "Sea level"
+    def update_infobar_text(self, step_or_all = 'all'):
+        '''
+        Takes messages off the front of the message queue and adds them to the
+        front of self.text. Can either do it with one message ('step') or with
+        all messages. Default behavior is all.
+        '''
+        queue = self.message_queue.queue
+        if step_or_all == 'all':
+            for i in range(0, len(queue)):
+                message = self.message_queue.retrieve_latest()
+                self.messages.insert(0, message)
+        elif step_or_all == 'step':
+                message = self.message_queue.retrieve_latest()
+                self.messages.insert(0, message)
         else:
-            pass
-        
-    def update_infobar_text(self):
-        for line, text in self.TEXT.items():
-            if line == 0:
-                self.text[line] = self.TEXT[line]+self.cursor_cartesian
-            elif line == 1:
-                self.text[line] = self.TEXT[line]+self.cursor_coordinates
-            elif line == 2:
-                self.text[line] = self.TEXT[line]+self.cursor_elevation
-            else:
-                self.text[line] = self.TEXT[line]
+            print 'Please specify \'step\' or \'all\' for Infobar.update_infobar_text()'
+            return
+        del self.messages[self.max_messages - 1:]
 
-#In-game panel on right side of screen                
+           
 class SideMenu(Menu):
-
+    '''
+    In-game panel that displays unit and map information, along the right side
+    of the screen
+    '''
     # Text to display in the sidemenu, by line number
     TEXT = {
         0 : 'Power Projection:',

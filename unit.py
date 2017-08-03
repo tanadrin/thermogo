@@ -2,6 +2,9 @@ from colors import *
 from player import *
 
 class Unit(object):
+    '''
+    Basic unit object, used for other game objects.
+    '''
     MAX_MOVEMENT = 0
     ATTACK_CHAR = '@'
     DEFEND_CHAR = '@'

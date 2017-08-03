@@ -3,6 +3,9 @@ from colors import *
 from menus import *
         
 class GameView:
+    '''
+    UI panel used to display the game world to the player.
+    '''
     def __init__(self, width, height):
         self.width = width
         self.height = height
@@ -71,7 +74,9 @@ class GameView:
             _, cursor.y = self.camera_to_cartesian(0, camera.height-1, camera)
             
 class GameUI:
-        
+    '''
+    Main object for handling the interaction of UI panels and menus
+    '''
     LOADING_TEXT = '***LOADING***'
     PAUSED_TEXT = '***PAUSED***'
     
@@ -235,7 +240,6 @@ class GameUI:
             
         # likewise for the infobar, if we're showing it
         if self.infobar.show == True and gamemap != None and camera != None:
-            self.infobar.update_infobar_data(self.cursor)
             self.infobar.refresh()
             libtcod.console_blit(
                 self.infobar.console, 
@@ -250,7 +254,6 @@ class GameUI:
         # if we're showing the right-side menu, it as well
         if self.sidemenu.show == True and gamemap != None and camera != None:
             self.sidemenu.update_sidemenu_data(self.cursor, self.game_object.active_player)
-            print self.game_object.game_map.grid[self.cursor.x][self.cursor.y].la, self.game_object.game_map.grid[self.cursor.x][self.cursor.y].lo
             self.sidemenu.refresh()
             libtcod.console_blit(
                 self.sidemenu.console, 

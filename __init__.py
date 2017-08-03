@@ -1,7 +1,3 @@
-'''
-TO-DO LIST:
-    
-'''
 import random
 import shelve
 import os.path
@@ -20,10 +16,14 @@ from mapping import *
 from colors import *
 from player import *
 from logic import *
+from pathfinding import *
 import socket
 import PodSixNet
 
 class GameController(object):
+    '''
+    Main game controller object; coordinates between the UI and the main game object, and handles input from the player.
+    '''
     # GUI and map variables
     SCREEN_WIDTH = 182
     SCREEN_HEIGHT = SCREEN_WIDTH/2+1

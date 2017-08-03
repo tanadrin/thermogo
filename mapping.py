@@ -57,14 +57,14 @@ class GameMap(object):
         return graph[current.x][current.y].neighbors[next_node]
             
 class GridCoordinate(object):
-
-    # Elevation parameters, can be freely altered. Max elevation will affect
-    # what appears as mountains; min elevation what appears as deep sea.
-    # LANDMASS_SIZE is actually the radius of the spherical surface used to
-    # sample the noise function; a larger radius means smaller apparent
-    # landmass sizes. DETAIL is the number of octaves in the noise and affects
-    # how crinkly the landmasses are.
-    
+    '''
+    Elevation parameters, can be freely altered. Max elevation will affect
+    what appears as mountains; min elevation what appears as deep sea.
+    LANDMASS_SIZE is actually the radius of the spherical surface used to
+    sample the noise function; a larger radius means smaller apparent
+    landmass sizes. DETAIL is the number of octaves in the noise and affects
+    how crinkly the landmasses are.
+    '''
     LANDMASS_SIZE = 2
     DETAIL = 64.0
     
