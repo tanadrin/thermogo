@@ -173,7 +173,7 @@ class Infobar(Menu):
             self.update_infobar_text()
             for i in range(0, len(self.messages)):
                 libtcod.console_set_default_foreground(self.console, self.messages[i][1])
-                libtcod.console_print(self.console, 0, i, self.LINE_START + self.messages[i][0])
+                libtcod.console_print(self.console, 0, (self.height-2)-i, self.LINE_START + self.messages[i][0])
         
     def update_infobar_text(self, step_or_all = 'all'):
         '''

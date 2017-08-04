@@ -11,7 +11,7 @@ TEAL = libtcod.Color(0, 255, 255)
 PURPLE = libtcod.Color(255,0,255)
 DARK_GRAY = libtcod.Color(100,100,100)
 DARK_TEAL = libtcod.Color(100, 100, 200)
-GOLD = libtcod.Color(299,191,0)
+GOLD = libtcod.Color(255,191,0)
 C_HIGH_ELEVATION = libtcod.Color(202,163,85)
 C_MIDHIGH_ELEVATION = libtcod.Color(145,162,78)
 C_MID_ELEVATION = libtcod.Color(129,162,76)
@@ -19,7 +19,8 @@ C_MIDLOW_ELEVATION = libtcod.Color(82,162,71)
 C_LOW_ELEVATION = libtcod.Color(49,162,67)
 C_SEA_ELEVATION = libtcod.Color(50,50,220)
 C_DEEPSEA_ELEVATION = libtcod.Color(0,0,150)
-    
+
+C_SYS = WHITE # Game notification color
 MENU_BACKGROUND_COLOR = BLACK
 MENU_TEXT_COLOR_1 = WHITE
 MENU_TEXT_COLOR_2 = RED

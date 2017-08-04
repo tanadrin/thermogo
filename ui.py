@@ -119,7 +119,7 @@ class GameUI:
             self.render_all(
                 game_object.game_map, 
                 game_ui.camera, 
-                game_object.persistent_objects + game_object.interface_objects, 
+                game_object.armies|game_object.fleets|game_object.bases|game_object.missiles|game_object.resources|game_object.interface_objects, 
                 game_ui.cursor
             )
         else:

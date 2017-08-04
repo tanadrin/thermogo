@@ -21,6 +21,7 @@ class GameObject(object):
     Main object for handling information about game objects and the current
     state of the game.
     '''
+    BASE_BUILD_COST = 5
     
     def __init__(self, mapsize, max_players, cleanup_interval):
     
@@ -36,8 +37,14 @@ class GameObject(object):
         # Tracking game elements
         self.max_players = max_players
         self.players = []
-        self.interface_objects = []
-        self.persistent_objects = []
+        self.interface_objects = set()
+        self.armies = set()
+        self.bases = set()
+        self.fleets = set()
+        self.missiles = set()
+        self.resources = set()
+        self.persistent_objects = [self.armies, self.bases, self.missiles, self.fleets]
+        self.round = 0
         
         # Background and cleanup
         self.cleanup_interval = cleanup_interval
@@ -62,19 +69,14 @@ class GameObject(object):
         '''
         Actual cleanup of objects marked for deletion
         '''
-        for object in self.persistent_objects:
-            if object.char == " " and object.name == "DEAD":
-                self.persistent_objects.remove(object)
         for object in self.active_player.owned_objects:
             if object.char == " " and object.name == "DEAD":
                 self.active_player.owned_objects.remove(object)
-                
-    
         
     def update_cursor_cartesian(self, cursor):
        '''
-       Updates the cursor's coordinates modulo the size of the world, versus its
-       coordinates as actually stored
+       Updates the cursor's coordinates modulo the size of the world, versus 
+       its coordinates as actually stored
        '''
        cursor.xm = cursor.x % self.game_map.world_width
        cursor.ym = cursor.y % self.game_map.world_height
@@ -99,18 +101,17 @@ class GameObject(object):
             
     def save_map(self, ui):
         '''
-        Saves all data associated with the current gamemap and all persistent objects
-        (but not anything to do with the interface)
+        Saves all data associated with the current gamemap and all 
+        persistent objects but not anything to do with the interface)
         '''
         savefile = shelve.open(str(self.game_map.name), 'n')
         savefile['game_map'] = self.game_map
         savefile['players'] = self.players
         savefile['active_player'] = self.active_player
-        
-        if self.persistent_objects != []:
-            savefile['persistent_objects'] = self.persistent_objects
-        else:
-            savefile['persistent_objects'] = None
+        savefile['armies'] = self.armies
+        savefile['fleets'] = self.fleets
+        savefile['bases'] = self.bases
+        savefile['missiles'] = self.missiles
         savefile.close()
         self.event_queue.add_event(0, self.clear_loading, (ui,))
                 
@@ -127,14 +128,13 @@ class GameObject(object):
         self.game_map = loadfile['gamemap']
         self.players = loadfile['players']
         self.active_player = loadfile['active_player']
-        
-        if loadfile['persistent_objects'] != None:
-            self.persistent_objects = loadfile['persistent_objects']
-        else:
-            self.persistent_objects = []
+        self.armies = loadfile['armies']
+        self.fleets = loadfile['fleets']
+        self.bases = loadfile['bases']
+        self.missiles = loadfile['missiles']
         if ui.cursor == None:
             ui.cursor = Cursor(0,0)
-            self.interface_objects.append(ui.cursor)
+            self.interface_objects.add(ui.cursor)
         loadfile.close()
         self.event_queue.add_event(0, self.clear_loading, (ui,))
         self.game_uis.append(ui)
@@ -143,11 +143,23 @@ class GameObject(object):
             ui.infobar.message_queue = self.message_queue
         
     def gen_map(self, ui):
-        self.persistent_objects = []
-        self.game_map = GameMap(self.mapsize)
+        '''
+        Generates a new map, UI objects, and player list in preparation for 
+        a new game.
+        '''
+        self.armies = set()
+        self.fleets = set()
+        self.bases = set()
+        self.missiles = set()
+        self.game_map = GameMap(self.mapsize, self.resources)
         ui.cursor = Cursor(0, 0)
-        self.interface_objects.append(ui.cursor)
-        ui.camera = GameCamera(0, ui.max_camera_height/2, ui.max_camera_width, ui.max_camera_height)
+        self.interface_objects.add(ui.cursor)
+        ui.camera = GameCamera(
+            0, 
+            ui.max_camera_height/2, 
+            ui.max_camera_width, 
+            ui.max_camera_height
+        )
         self.players = self.create_players(self.max_players)
         self.active_player = self.players[0]
         self.event_queue.add_event(0, self.clear_loading, (ui,))
@@ -155,15 +167,28 @@ class GameObject(object):
         for ui in self.game_uis:
             ui.game_object = self
             ui.infobar.message_queue = self.message_queue
+            ui.infobar.message_queue.add_message('Round 1', C_SYS)
+            ui.infobar.message_queue.add_message(
+                'Player 1\'s turn', 
+                self.players[0].color
+            )
     
     def unload_map(self, ui):
+        '''
+        Unloads all data associated with the map/current game state, in 
+        preparation for exiting the game (but not necessarily the entire 
+        program)
+        '''
         self.game_map = None
         ui.camera = None
         ui.cursor = None
-        self.interface_objects = []
+        self.interface_objects = set()
         self.players = []
         self.active_player = None
-        self.persistent_objects = []
+        self.armies = set()
+        self.fleets = set()
+        self.bases = set()
+        self.missiles = set()
         self.game_uis = None
         
     def create_players(self, number):
@@ -187,44 +212,98 @@ class GameObject(object):
         return players
         
     def pass_turn(self):
+        # If the active player isn't last on the player list, pass the turn.
+        # Otherwise, end the round completely and hand the turn back to the
+        # first player on the player list.
         if self.active_player.number < len(self.players):
-            # This is kind of a fucked-up way of doing it, but because the player
-            # numbers are 1-indexed, but the list of players is 0-indexed, the 
-            # index of the next active player on the list is equal to the current
-            # player number; no reason to subtract 1 then add it again.
+            # This is kind of a fucked-up way of doing it, but because the 
+            # player numbers are 1-indexed, but the list of players is 
+            # 0-indexed, the index of the next active player on the list is 
+            # equal to the current player number; no reason to subtract 1
+            # then add it again.
             self.active_player = self.players[self.active_player.number]
         else:
             self.active_player = self.players[0]
-        for player in self.players:
-            player.power_projection += 1
+            self.round += 1
+            self.message_queue.add_message('Round '+str(self.round+1), WHITE)
+            for player in self.players:
+                player.power_projection += 1
+        self.wake_player()
+        self.message_queue.add_message(
+            'Player '+str(self.active_player.number)+'\'s turn', 
+            self.active_player.color
+        )
             
     def  cycle(self):
         '''
         Periodic game events governed by the main game loop
         '''
-        if self.game_map != None and self.persistent_objects != None:
+        if self.game_map != None:
             self.run_cleanup()
+            self.check_wake(self.active_player)
             
         self.event_queue.tick()
-
-    # Force spawn a base for debugging purposes
-    def force_spawn(self, cursor):
-        army = Army(cursor.x, cursor.y, self.persistent_objects, self.active_player)
-    
-    # Kill all objects for debugging purposes
-    def force_kill(self):
-        for object in self.persistent_objects:
-            object.remove_unit()
         
-    def remove_dead_units(self):
-        for object in self.persistent_objects:
-            if object.char == " " and object.name == "DEAD":
-                self.persistent_objects.remove(object)
-                self.active_player.owned_objects.remove(object)
+    def build_base(self, cursor):
+        '''
+        Spawns a base at cursor x, y, if player has enough power projection
+        and action points left (and the location is valid).
+        '''
+        # Check for valid location
+        if self.game_map.grid[cursor.x][cursor.y].elevation > 0:
+            if len(self.bases) > 0:
+                for unit in self.bases:
+                    if cursor.x == unit.x and cursor.y == unit.y:
+                        return
+                else:
+                    # Check for sufficient power projection and actions
+                    if self.active_player.actions > 0 and self.active_player.power_projection >= self.BASE_BUILD_COST:
+                        self.active_player.actions -= 1
+                        self.active_player.power_projection -= self.BASE_BUILD_COST
+                        base = Base(cursor.x, cursor.y, self.bases, self.active_player)
+                        self.message_queue.add_message(
+                            'Player '+str(self.active_player.number)+
+                            ' built a base at '+str(cursor.la)+' '+str(cursor.lo)+'.', 
+                            self.active_player.color
+                        )
+            else:
+                if self.active_player.actions > 0 and self.active_player.power_projection >= self.BASE_BUILD_COST:
+                    self.active_player.actions -= 1
+                    self.active_player.power_projection -= self.BASE_BUILD_COST
+                    base = Base(cursor.x, cursor.y, self.bases, self.active_player)
+                    self.message_queue.add_message(
+                        'Player '+str(self.active_player.number)+
+                        ' built a base at '+str(cursor.la)+' '+str(cursor.lo)+'.', 
+                        self.active_player.color
+                    )
                 
     def clear_loading(self, ui):
         self.loading = False
         ui.loading = False
+        
+    def check_wake(self, player):
+        '''
+        Checks the player for remaining valid moves; if none remain, the wake
+        status of the player is set to False, allowing the turn to be passed 
+        automatically via the action key. The turn can always be passed 
+        manually as well.
+        '''
+        moves_left = 0
+        if player.owned_objects != []:
+            for object in player.owned_objects:
+                moves_left += object.movement
+        if player.actions > 0:
+            if player.power_projection >= self.BASE_BUILD_COST or player.supply > player.supply_used:
+                moves_left += player.actions
+        if moves_left <= 0:
+            player.wake = False
+            
+    def wake_player(self):
+        '''
+        Used to wake the active player at the start of their turn.
+        '''
+        self.active_player.wake = True
+        self.active_player.actions = self.active_player.MAX_ACTIONS
 
 class EventQueue(object):
     '''
@@ -270,13 +349,13 @@ class EventQueue(object):
 class MessageQueue(object):
     '''
     Messages are passed to the MessageQueue, which stores them and passes them
-    to the infobar to be displayed. Each message is stored with a color (default
-    is white) in which it is displayed.
+    to the infobar to be displayed. Each message is stored with a color (uses
+    default message color unless specified otherwise) in which it is displayed.
     '''
     def __init__(self):
         self.queue = []
         
-    def add_message(self, text, color = WHITE):
+    def add_message(self, text, color = C_SYS):
         self.queue.append((text, color))
     
     def retrieve_latest(self):

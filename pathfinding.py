@@ -15,7 +15,8 @@ def a_star_search(gamemap, start, goal, land_or_sea = 'land'):
     came_from = {} # Dict of node : previous node
     cost_so_far = {} # Dict of node : cost to get there
     came_from[start] = None
-    cost_so_far[start] = 0
+    cost_so_far[start] = 0 # And in the eeeeeend it doesn't even maaatter
+    # wait no, that's "come so far"
     
     while not frontier.is_empty():
         current = frontier.get()

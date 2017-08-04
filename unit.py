@@ -12,9 +12,10 @@ class Unit(object):
     MOVE_CHAR = '@'
     HOLD_CHAR = '@'
     DEFAULT_CHAR = '@'
-    def __init__(self, x, y, objects, player = no_player):
-        objects.append(self)
-        player.owned_objects.append(self)
+    def __init__(self, x, y, unit_list, player = no_player):
+        unit_list.add(self)
+        self.unit_list = unit_list
+        player.owned_objects.add(self)
         self.x = x
         self.y = y
         self.char = self.DEFAULT_CHAR
@@ -28,18 +29,15 @@ class Unit(object):
         self.supply_cost = 0
         self.active = False
     
-    #Marks object to be removed by cleanup function
-    def remove_unit(self):
-        self.char = " "
-        self.name = "DEAD"
-        self.x = -1
-        self.y = -1
-    
     # Basic movement on the game grid
     def move(self, x, y):
         self.x += x
         self.y += y
         self.movement -= 10
+        
+    def kill(self):
+        self.owner.owned_objects.remove(self)
+        self.unit_list.remove(self)
         
     def blink(self):
         if self.wait > 0:
@@ -68,17 +66,19 @@ class Unit(object):
             self.char = self.SUPPORT_CHAR
         elif self.order == 'move':
             self.char = self.MOVE_CHAR
+            
     
 class Base(Unit):
     DEFAULT_CHAR = '#'
-    def __init__(self, x, y, objects, player = no_player):
-        super(Army, self).__init__(x, y, objects, player)
+    def __init__(self, x, y, unit_list, player = no_player):
+        super(Base, self).__init__(x, y, unit_list, player)
         self.supply_cost = -1
+        
         
 class ResourceNode(Unit):
     DEFAULT_CHAR = '^'
-    def __init__(self, x, y, objects, player = no_player):
-        super(Army, self).__init__(x, y, objects, player)
+    def __init__(self, x, y, unit_list, player = no_player):
+        super(ResourceNode, self).__init__(x, y, unit_list, player)
         self.color = GOLD
         
 class Army(Unit):
@@ -89,8 +89,8 @@ class Army(Unit):
     MOVE_CHAR = '/'
     HOLD_CHAR = '*'
     DEFAULT_CHAR = '&'
-    def __init__(self, x, y, objects, player):
-        super(Army, self).__init__(x, y, objects, player)
+    def __init__(self, x, y, unit_list, player):
+        super(Army, self).__init__(x, y, unit_list, player)
         self.name = 'Army'
         self.movement_type = 'land'
         self.supply_cost = 1
@@ -104,8 +104,8 @@ class Fleet(Unit):
     MOVE_CHAR = '\\'
     HOLD_CHAR = '*'
     DEFAULT_CHAR = 'V'
-    def __init__(self, x, y, objects, player):
-        super(Fleet, self).__init__(x, y, objects, player)
+    def __init__(self, x, y, unit_list, player):
+        super(Fleet, self).__init__(x, y, unit_list, player)
         self.name = 'Fleet'
         self.movement_type = 'sea'
         self.supply_cost = 1

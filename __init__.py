@@ -101,9 +101,7 @@ class GameController(object):
         ord('-'): lambda self : self.camera_pan( 0, 1),
         ord('='): lambda self : self.camera_pan( 0,-1),
         ord('s'): lambda self : self.begin_save(self.game_ui, self.MAX_GUI_WAIT),
-        ord('q'): lambda self : self.game_object.pass_turn(),
-        ord('w'): lambda self : self.game_object.force_spawn(self.game_ui.cursor),
-        ord('e'): lambda self : self.game_object.force_kill(),
+        ord('q'): lambda self : self.force_end_turn(),
     }
     
     # Handling input and dispatch periodic UI and game logic functions
@@ -116,9 +114,6 @@ class GameController(object):
             key = libtcod.console_check_for_keypress() # Loop runs continuously
             if self.gui_wait > 0:
                 self.gui_wait -= 1
-        
-        # Throttled input cooldown
-        
         
         # Handling console key input (i.e., non-character key input)
         for input, action in self.CONSOLE_KEY_ACTIONS.items():
@@ -188,8 +183,18 @@ class GameController(object):
             selection = self.game_ui.current_menu.action_select()
             self.run_selection(selection)
         # If the action key is being used in-game
+        elif self.game_object.active_player != None:
+            # If the player has valid moves left, see if a base can be built
+            if self.game_object.active_player.wake == True:
+                self.game_object.build_base(self.game_ui.cursor)
+            # If the active player has no valid moves left, pass the turn
+            if self.game_object.active_player.wake == False:
+                self.game_object.pass_turn()
         else:
             pass
+                
+    def force_end_turn(self):
+        self.game_object.pass_turn()
             
     def escape_key(self):
         # If the escape key is pressed while no game is loaded:
